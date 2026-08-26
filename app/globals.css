@@ -1,0 +1,438 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   KIOSKO APP — SISTEMA DE DISEÑO
+   ==========================================================================
+   Referencia: el mostrador de un kiosco, no un dashboard.
+
+   Dos materiales, y toda la interfaz sale de ahí:
+
+   · LA REPISA   superficies blancas sobre un lienzo azul-gris frío. Es el
+                 fondo donde se apoya la mercadería. Todo lo funcional vive acá.
+   · EL PAPEL    el ticket. Papel tibio, monoespaciada, borde dentado. Es el
+                 único elemento con textura propia en toda la app, y es a
+                 propósito: es lo que el cliente se lleva en la mano.
+
+   UN SOLO ACENTO: el verde. Significa plata y nada más — cobrar, confirmar un
+   pago, saldo a favor. Si algo es verde, es dinero. Esa asociación es lo que
+   permite cobrar sin leer el botón. La navegación y el foco usan tinta, no
+   color: un menú no compite con el botón de cobrar.
+   ========================================================================== */
+
+:root {
+  /* --- La repisa ------------------------------------------------------- */
+  --lienzo: #e9edf3;
+  --superficie: #ffffff;
+  --superficie-alt: #f3f5f9;
+  --superficie-hundida: #e4e8f0;
+  --borde: #dbe1ea;
+  --borde-fuerte: #bcc5d4;
+
+  /* --- Tinta ------------------------------------------------------------ */
+  --tinta: #131a26;
+  --texto: #131a26;
+  --texto-muted: #566175;
+  --texto-sutil: #616a79;
+
+  /* --- El acento. Verde = plata. Nunca decorativo. ---------------------- */
+  --plata: #0e7c5a;
+  --plata-viva: #12946b;
+  --plata-honda: #0a5e44;
+  --plata-fg: #ffffff;
+  --plata-tenue: #e2f2eb;
+
+  /* --- El papel del ticket ---------------------------------------------- */
+  --papel: #fcfbf7;
+  --papel-linea: #ded8c9;
+  --papel-tinta: #2b2822;
+
+  /* --- Estados. No son acentos: informan, no invitan. ------------------- */
+  --exito: #0e7c5a;
+  --alerta: #a35c07;
+  --peligro: #bf3026;
+  --dato: #11648f;
+  --exito-tenue: #e2f2eb;
+  --alerta-tenue: #fbf0de;
+  --peligro-tenue: #fbeae8;
+  --dato-tenue: #e4eff7;
+
+  /* --- Compatibilidad con el código existente --------------------------- */
+  --bg: var(--lienzo);
+  --surface: var(--superficie);
+  --surface-alt: var(--superficie-alt);
+  --surface-alto: var(--superficie);
+  --border: var(--borde);
+  --border-fuerte: var(--borde-fuerte);
+  --text: var(--texto);
+  --text-muted: var(--texto-muted);
+  --text-sutil: var(--texto-sutil);
+  --brand: var(--tinta);
+  --brand-suave: #2a3446;
+  --brand-fg: #ffffff;
+  --brand-tenue: #e7eaf0;
+  --plata-fuerte: var(--plata-honda);
+  --primary: var(--plata);
+  --primary-fg: var(--plata-fg);
+  --success: var(--exito);
+  --warning: var(--alerta);
+  --danger: var(--peligro);
+  --info: var(--dato);
+  --success-tenue: var(--exito-tenue);
+  --warning-tenue: var(--alerta-tenue);
+  --danger-tenue: var(--peligro-tenue);
+  --info-tenue: var(--dato-tenue);
+  --acento: var(--plata);
+  --radio: 0.875rem;
+
+  /* --- Sombra: teñida al azul del lienzo, nunca negro puro -------------- */
+  --sombra-1: 0 1px 2px rgb(29 41 61 / 0.06), 0 1px 1px rgb(29 41 61 / 0.04);
+  --sombra-2: 0 2px 4px rgb(29 41 61 / 0.04), 0 8px 20px -6px rgb(29 41 61 / 0.12);
+  --sombra-3: 0 10px 28px -8px rgb(29 41 61 / 0.16), 0 28px 56px -20px rgb(29 41 61 / 0.18);
+  --sombra-adentro: inset 0 1px 0 rgb(255 255 255 / 0.7);
+
+  --anillo: 0 0 0 2px var(--superficie), 0 0 0 4px var(--tinta);
+
+  /* --- Radios: generosos. La mercadería de kiosco es redondeada. -------- */
+  --radio-xs: 0.5rem;
+  --radio-sm: 0.625rem;
+  --radio-lg: 1.25rem;
+  --radio-xl: 1.75rem;
+
+  color-scheme: light;
+}
+
+/* --------------------------------------------------------------------------
+   Sin tema oscuro, a proposito.
+
+   El mostrador se usa con luz de mediodia entrando por la vidriera: ahi una
+   pantalla oscura es un espejo y no se lee nada. Y el admin lo abre la misma
+   persona, en el mismo local, muchas veces en la misma tablet. Dos temas
+   serian dos superficies distintas para el mismo par de ojos en el mismo dia.
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   Mapeo a Tailwind
+   -------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-lienzo: var(--lienzo);
+  --color-bg: var(--lienzo);
+  --color-surface: var(--superficie);
+  --color-surface-alt: var(--superficie-alt);
+  --color-surface-alto: var(--superficie);
+  --color-hundida: var(--superficie-hundida);
+  --color-border: var(--borde);
+  --color-border-fuerte: var(--borde-fuerte);
+
+  --color-text: var(--texto);
+  --color-text-muted: var(--texto-muted);
+  --color-text-sutil: var(--texto-sutil);
+  --color-tinta: var(--tinta);
+
+  --color-plata: var(--plata);
+  --color-plata-viva: var(--plata-viva);
+  --color-plata-fuerte: var(--plata-honda);
+  --color-plata-fg: var(--plata-fg);
+  --color-plata-tenue: var(--plata-tenue);
+
+  --color-papel: var(--papel);
+  --color-papel-linea: var(--papel-linea);
+  --color-papel-tinta: var(--papel-tinta);
+
+  --color-brand: var(--brand);
+  --color-brand-suave: var(--brand-suave);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-tenue: var(--brand-tenue);
+
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-success: var(--exito);
+  --color-warning: var(--alerta);
+  --color-danger: var(--peligro);
+  --color-info: var(--dato);
+  --color-success-tenue: var(--exito-tenue);
+  --color-warning-tenue: var(--alerta-tenue);
+  --color-danger-tenue: var(--peligro-tenue);
+  --color-info-tenue: var(--dato-tenue);
+  --color-acento: var(--acento);
+
+  --font-sans: var(--fuente-texto), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--fuente-display), var(--fuente-texto), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--fuente-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-xs: var(--radio-xs);
+  --radius-sm: var(--radio-sm);
+  --radius-token: var(--radio);
+  --radius-lg: var(--radio-lg);
+  --radius-xl: var(--radio-xl);
+
+  --shadow-e1: var(--sombra-1);
+  --shadow-e2: var(--sombra-2);
+  --shadow-e3: var(--sombra-3);
+
+  --spacing-tactil: 4rem;
+  --spacing-numpad: 4.5rem;
+  --spacing-accion: 3.5rem;
+
+  --ease-suave: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-entrar: entrar 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-subir: subir 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-aparecer: aparecer 0.18s ease-out;
+  --animate-sello: sello 0.42s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  * {
+    border-color: var(--borde);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: var(--lienzo);
+    color: var(--texto);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: contain;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    line-height: 1.14;
+  }
+
+  /* Un solo tratamiento de foco. Nunca se saca el anillo. */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--anillo);
+    border-radius: var(--radio-sm);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--plata) 24%, transparent);
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--borde-fuerte);
+    border: 4px solid transparent;
+    background-clip: content-box;
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--texto-sutil);
+    background-clip: content-box;
+  }
+
+  /* En el POS no se selecciona texto por accidente al tocar rápido. */
+  .tema-pos {
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .tema-pos input,
+  .tema-pos textarea {
+    user-select: text;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Utilidades del sistema
+   -------------------------------------------------------------------------- */
+
+@layer utilities {
+  /* REGLA DURA: todo número que puede cambiar usa tabular-nums. */
+  .num {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: -0.02em;
+  }
+
+  /* Números del recibo: monoespaciada, para que las columnas alineen solas. */
+  .num-recibo {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+  }
+
+  .area-tactil {
+    min-width: 4rem;
+    min-height: 4rem;
+  }
+
+  .sin-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .sin-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .tarjeta {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra-1);
+  }
+
+  .vidrio {
+    background: color-mix(in srgb, var(--superficie) 84%, transparent);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  }
+
+  /* ---- EL PAPEL ---------------------------------------------------------
+     La firma de la app. El ticket no es un panel: es una tira de papel
+     apoyada sobre la repisa. Fibra sutil, y el borde de abajo dentado como
+     el corte de una impresora térmica. */
+  .papel {
+    background-color: var(--papel);
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.014) 0 1px,
+      transparent 1px 3px
+    );
+    color: var(--papel-tinta);
+  }
+
+  .papel-cortado {
+    -webkit-mask-image: linear-gradient(#000 0 0),
+      conic-gradient(from -45deg at bottom, #0000 90deg, #000 0);
+    mask-image: linear-gradient(#000 0 0), conic-gradient(from -45deg at bottom, #0000 90deg, #000 0);
+    -webkit-mask-size: 100% calc(100% - 8px), 16px 16px;
+    mask-size: 100% calc(100% - 8px), 16px 16px;
+    -webkit-mask-position: top, bottom;
+    mask-position: top, bottom;
+    -webkit-mask-repeat: no-repeat, repeat-x;
+    mask-repeat: no-repeat, repeat-x;
+  }
+
+  /* Renglón del recibo con puntos guía entre concepto e importe. */
+  .guia::after {
+    content: "";
+    flex: 1;
+    margin: 0 0.45rem;
+    align-self: flex-end;
+    border-bottom: 1px dotted var(--papel-linea);
+    transform: translateY(-0.32rem);
+  }
+
+  /* Presión táctil: la única animación obligatoria del POS. Sin feedback
+     inmediato el operador toca dos veces y cobra doble. */
+  .presion {
+    transition:
+      transform 0.12s var(--ease-suave),
+      box-shadow 0.18s var(--ease-suave),
+      background-color 0.18s var(--ease-suave),
+      border-color 0.18s var(--ease-suave),
+      color 0.18s var(--ease-suave);
+  }
+  .presion:active {
+    transform: translateY(1px) scale(0.985);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .presion:active {
+      transform: none;
+    }
+  }
+
+  /* Rótulo: versalitas cortas. Nunca "SECCIÓN 01". */
+  .rotulo {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--texto-sutil);
+  }
+
+  /* Toldo: la franja del toldo del kiosco. Una sola vez por pantalla, en el
+     borde superior del recibo y de la vidriera. */
+  .toldo {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--plata) 0 7px,
+      color-mix(in srgb, var(--plata) 45%, var(--papel)) 7px 14px
+    );
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Movimiento
+   -------------------------------------------------------------------------- */
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* El sello de "cobrado": entra como un sello de goma sobre el papel. */
+@keyframes sello {
+  0% {
+    opacity: 0;
+    transform: scale(1.5) rotate(-9deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.94) rotate(-3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

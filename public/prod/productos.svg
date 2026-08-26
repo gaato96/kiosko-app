@@ -1,0 +1,400 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+<!--
+  Ilustraciones de producto de Kiosko App.
+
+  Un solo sprite: una peticion, cacheada por el service worker, cero peso en el
+  bundle de JS. Cada simbolo se dibuja en un viewBox de 64x64 y usa SIEMPRE
+  currentColor con opacidades escalonadas (1 / .5 / .28 / .14). Eso hace que
+  cada producto tome el color de su categoria sin tener que versionar el dibujo.
+
+  Se referencian con <use href="/prod/productos.svg#alfajor" />.
+-->
+
+<!-- ============================================ BEBIDAS -->
+<symbol id="p-gaseosa" viewBox="0 0 64 64">
+  <path d="M27 6h10v5c0 2 3 3 3 7v34a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V18c0-4 3-5 3-7z" fill="currentColor" opacity=".28"/>
+  <path d="M24 26h16v14H24z" fill="currentColor"/>
+  <rect x="26" y="4" width="12" height="5" rx="1.5" fill="currentColor"/>
+  <path d="M27 44h10v3H27z" fill="currentColor" opacity=".5"/>
+</symbol>
+<symbol id="p-lata" viewBox="0 0 64 64">
+  <rect x="20" y="10" width="24" height="44" rx="4" fill="currentColor" opacity=".28"/>
+  <rect x="20" y="24" width="24" height="15" fill="currentColor"/>
+  <ellipse cx="32" cy="12" rx="12" ry="3.5" fill="currentColor" opacity=".55"/>
+  <circle cx="32" cy="12" r="3" fill="currentColor"/>
+</symbol>
+<symbol id="p-agua" viewBox="0 0 64 64">
+  <path d="M25 10h14v4c0 3 4 5 4 10v28a6 6 0 0 1-6 6h-10a6 6 0 0 1-6-6V24c0-5 4-7 4-10z" fill="currentColor" opacity=".22"/>
+  <path d="M21 30h22v4H21zM21 38h22v4H21z" fill="currentColor" opacity=".45"/>
+  <rect x="26" y="6" width="12" height="6" rx="2" fill="currentColor"/>
+</symbol>
+<symbol id="p-bidon" viewBox="0 0 64 64">
+  <path d="M14 22h36v32a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <path d="M14 32h36v10H14z" fill="currentColor"/>
+  <rect x="26" y="6" width="12" height="16" rx="2" fill="currentColor" opacity=".5"/>
+  <rect x="24" y="4" width="16" height="5" rx="2" fill="currentColor"/>
+</symbol>
+<symbol id="p-jugo" viewBox="0 0 64 64">
+  <path d="M18 18h28v36a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4z" fill="currentColor" opacity=".28"/>
+  <path d="M18 18 32 8l14 10z" fill="currentColor" opacity=".5"/>
+  <rect x="23" y="30" width="18" height="13" rx="2" fill="currentColor"/>
+  <path d="M36 8h4v10h-4z" fill="currentColor"/>
+</symbol>
+<symbol id="p-energizante" viewBox="0 0 64 64">
+  <rect x="23" y="8" width="18" height="48" rx="4" fill="currentColor" opacity=".26"/>
+  <path d="m34 20-9 15h6l-2 11 9-16h-6z" fill="currentColor"/>
+  <ellipse cx="32" cy="10" rx="9" ry="3" fill="currentColor" opacity=".55"/>
+</symbol>
+
+<!-- ============================================ ALCOHOLES -->
+<symbol id="p-cerveza" viewBox="0 0 64 64">
+  <path d="M26 6h12v10c0 3 5 6 5 12v28a4 4 0 0 1-4 4H25a4 4 0 0 1-4-4V28c0-6 5-9 5-12z" fill="currentColor" opacity=".3"/>
+  <path d="M21 34h22v16H21z" fill="currentColor"/>
+  <rect x="25" y="4" width="14" height="5" rx="1" fill="currentColor"/>
+  <path d="M24 38h16v3H24z" fill="currentColor" opacity=".35"/>
+</symbol>
+<symbol id="p-vino" viewBox="0 0 64 64">
+  <path d="M27 4h10v14c0 4 6 7 6 14v24a4 4 0 0 1-4 4H25a4 4 0 0 1-4-4V32c0-7 6-10 6-14z" fill="currentColor" opacity=".3"/>
+  <path d="M21 36h22v14H21z" fill="currentColor"/>
+  <rect x="26" y="2" width="12" height="7" rx="1" fill="currentColor"/>
+</symbol>
+<symbol id="p-fernet" viewBox="0 0 64 64">
+  <path d="M24 12h16v6c0 3 4 5 4 10v26a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4V28c0-5 4-7 4-10z" fill="currentColor"/>
+  <rect x="20" y="32" width="24" height="14" rx="1" fill="currentColor" opacity=".28"/>
+  <rect x="27" y="4" width="10" height="9" rx="2" fill="currentColor" opacity=".55"/>
+</symbol>
+
+<!-- ============================================ CIGARRILLOS -->
+<symbol id="p-cigarrillos" viewBox="0 0 64 64">
+  <rect x="16" y="14" width="32" height="40" rx="3" fill="currentColor" opacity=".28"/>
+  <path d="M16 17a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v11H16z" fill="currentColor"/>
+  <rect x="22" y="34" width="20" height="4" rx="1" fill="currentColor" opacity=".5"/>
+  <rect x="22" y="42" width="14" height="4" rx="1" fill="currentColor" opacity=".5"/>
+</symbol>
+<symbol id="p-encendedor" viewBox="0 0 64 64">
+  <rect x="22" y="20" width="20" height="38" rx="6" fill="currentColor" opacity=".3"/>
+  <rect x="26" y="14" width="12" height="8" rx="2" fill="currentColor"/>
+  <path d="M32 4c4 5 6 7 6 10a6 6 0 0 1-12 0c0-3 2-5 6-10z" fill="currentColor" opacity=".55"/>
+  <rect x="26" y="32" width="12" height="12" rx="2" fill="currentColor"/>
+</symbol>
+
+<!-- ============================================ GOLOSINAS -->
+<symbol id="p-alfajor" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="22" fill="currentColor" opacity=".28"/>
+  <circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="3" opacity=".5"/>
+  <path d="M10 30h44v6H10z" fill="currentColor"/>
+  <circle cx="32" cy="24" r="4" fill="currentColor" opacity=".45"/>
+</symbol>
+<symbol id="p-chocolate" viewBox="0 0 64 64">
+  <rect x="12" y="16" width="40" height="32" rx="3" fill="currentColor" opacity=".28"/>
+  <path d="M12 26h40M12 37h40M25 16v32M39 16v32" stroke="currentColor" stroke-width="2.5" opacity=".55"/>
+  <path d="M12 16h40v10H12z" fill="currentColor"/>
+</symbol>
+<symbol id="p-caramelo" viewBox="0 0 64 64">
+  <ellipse cx="32" cy="32" rx="14" ry="11" fill="currentColor" opacity=".32"/>
+  <path d="M18 32 6 22v20zM46 32l12-10v20z" fill="currentColor"/>
+  <path d="M25 27c4 4 10 4 14 0" stroke="currentColor" stroke-width="2.5" fill="none" opacity=".6"/>
+</symbol>
+<symbol id="p-chicle" viewBox="0 0 64 64">
+  <rect x="14" y="22" width="36" height="20" rx="4" fill="currentColor" opacity=".28"/>
+  <rect x="14" y="22" width="36" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".5"/>
+  <circle cx="24" cy="32" r="4" fill="currentColor"/>
+  <circle cx="34" cy="32" r="4" fill="currentColor"/>
+  <circle cx="44" cy="32" r="3" fill="currentColor" opacity=".5"/>
+</symbol>
+<symbol id="p-chupetin" viewBox="0 0 64 64">
+  <circle cx="32" cy="24" r="16" fill="currentColor" opacity=".3"/>
+  <path d="M32 24a8 8 0 0 1 8-8 8 8 0 0 1-16 0 8 8 0 0 1 8 8z" fill="currentColor" opacity=".6"/>
+  <circle cx="32" cy="24" r="6" fill="currentColor"/>
+  <rect x="30" y="38" width="4" height="22" rx="2" fill="currentColor" opacity=".5"/>
+</symbol>
+<symbol id="p-turron" viewBox="0 0 64 64">
+  <rect x="10" y="24" width="44" height="18" rx="3" fill="currentColor" opacity=".3"/>
+  <path d="M10 24h44v6H10z" fill="currentColor"/>
+  <circle cx="21" cy="36" r="2.5" fill="currentColor" opacity=".6"/>
+  <circle cx="32" cy="36" r="2.5" fill="currentColor" opacity=".6"/>
+  <circle cx="43" cy="36" r="2.5" fill="currentColor" opacity=".6"/>
+</symbol>
+
+<!-- ============================================ GALLETITAS -->
+<symbol id="p-galletitas" viewBox="0 0 64 64">
+  <path d="M14 14h36v36a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <path d="m14 14 4-6h28l4 6z" fill="currentColor" opacity=".5"/>
+  <circle cx="26" cy="30" r="6" fill="currentColor"/>
+  <circle cx="40" cy="30" r="6" fill="currentColor"/>
+  <circle cx="33" cy="43" r="6" fill="currentColor" opacity=".55"/>
+</symbol>
+<symbol id="p-oblea" viewBox="0 0 64 64">
+  <rect x="8" y="22" width="48" height="20" rx="2" fill="currentColor" opacity=".3"/>
+  <path d="M8 28h48M8 36h48" stroke="currentColor" stroke-width="2.5" opacity=".55"/>
+  <path d="M20 22v20M32 22v20M44 22v20" stroke="currentColor" stroke-width="2" opacity=".4"/>
+  <rect x="8" y="22" width="48" height="5" fill="currentColor"/>
+</symbol>
+
+<!-- ============================================ SNACKS -->
+<symbol id="p-papas" viewBox="0 0 64 64">
+  <path d="M16 16h32l-3 38a5 5 0 0 1-5 4H24a5 5 0 0 1-5-4z" fill="currentColor" opacity=".28"/>
+  <path d="M14 6h36l-2 12H16z" fill="currentColor" opacity=".5"/>
+  <ellipse cx="26" cy="34" rx="6" ry="5" fill="currentColor"/>
+  <ellipse cx="38" cy="42" rx="6" ry="5" fill="currentColor"/>
+</symbol>
+<symbol id="p-mani" viewBox="0 0 64 64">
+  <path d="M18 12h28v34a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <rect x="16" y="6" width="32" height="8" rx="2" fill="currentColor" opacity=".55"/>
+  <ellipse cx="27" cy="28" rx="5" ry="7" fill="currentColor"/>
+  <ellipse cx="38" cy="38" rx="5" ry="7" fill="currentColor"/>
+</symbol>
+
+<!-- ============================================ PANADERIA -->
+<symbol id="p-pan" viewBox="0 0 64 64">
+  <path d="M8 34c0-10 10-16 24-16s24 6 24 16-10 14-24 14S8 44 8 34z" fill="currentColor" opacity=".3"/>
+  <path d="M20 26c3 4 3 8 0 12M32 24c3 5 3 11 0 16M44 26c3 4 3 8 0 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/>
+</symbol>
+<symbol id="p-factura" viewBox="0 0 64 64">
+  <path d="M10 40c0-12 10-22 22-22s22 10 22 22z" fill="currentColor" opacity=".3"/>
+  <rect x="8" y="40" width="48" height="8" rx="4" fill="currentColor"/>
+  <path d="M22 24c2 5 2 10 0 15M32 20c2 6 2 13 0 19M42 24c2 5 2 10 0 15" stroke="currentColor" stroke-width="2.5" opacity=".55" fill="none"/>
+</symbol>
+<symbol id="p-panlactal" viewBox="0 0 64 64">
+  <path d="M10 26c0-8 10-12 22-12s22 4 22 12v22a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4z" fill="currentColor" opacity=".28"/>
+  <path d="M10 34h44v6H10z" fill="currentColor"/>
+  <path d="M24 14v38M40 14v38" stroke="currentColor" stroke-width="2" opacity=".4"/>
+</symbol>
+
+<!-- ============================================ FIAMBRERIA -->
+<symbol id="p-jamon" viewBox="0 0 64 64">
+  <ellipse cx="32" cy="34" rx="22" ry="16" fill="currentColor" opacity=".3"/>
+  <ellipse cx="32" cy="34" rx="13" ry="9" fill="currentColor" opacity=".55"/>
+  <circle cx="26" cy="31" r="3" fill="currentColor"/>
+  <circle cx="37" cy="37" r="2.5" fill="currentColor"/>
+  <path d="M32 18v-6" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+</symbol>
+<symbol id="p-queso" viewBox="0 0 64 64">
+  <path d="M6 42 46 16l12 8v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z" fill="currentColor" opacity=".3"/>
+  <path d="M46 16v8h12" stroke="currentColor" stroke-width="3" fill="none" opacity=".5"/>
+  <circle cx="22" cy="36" r="4" fill="currentColor"/>
+  <circle cx="38" cy="32" r="3" fill="currentColor"/>
+  <circle cx="46" cy="38" r="2.5" fill="currentColor"/>
+</symbol>
+<symbol id="p-salchicha" viewBox="0 0 64 64">
+  <rect x="6" y="26" width="52" height="12" rx="6" fill="currentColor" opacity=".32"/>
+  <rect x="6" y="26" width="52" height="12" rx="6" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".5"/>
+  <path d="M22 26v12M32 26v12M42 26v12" stroke="currentColor" stroke-width="2.5" opacity=".5"/>
+</symbol>
+
+<!-- ============================================ LACTEOS -->
+<symbol id="p-leche" viewBox="0 0 64 64">
+  <path d="M18 22h28v32a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <path d="M18 22 32 6l14 16z" fill="currentColor" opacity=".5"/>
+  <rect x="23" y="32" width="18" height="14" rx="2" fill="currentColor"/>
+</symbol>
+<symbol id="p-yogur" viewBox="0 0 64 64">
+  <path d="m20 22 3 32a5 5 0 0 0 5 4h8a5 5 0 0 0 5-4l3-32z" fill="currentColor" opacity=".28"/>
+  <rect x="17" y="16" width="30" height="8" rx="3" fill="currentColor"/>
+  <path d="M25 34h14v10H25z" fill="currentColor" opacity=".5"/>
+</symbol>
+<symbol id="p-manteca" viewBox="0 0 64 64">
+  <path d="m10 40 12-16h32l-12 16z" fill="currentColor" opacity=".28"/>
+  <path d="M10 40h32v10H10z" fill="currentColor" opacity=".45"/>
+  <path d="M42 40l12-16v10L42 50z" fill="currentColor"/>
+</symbol>
+<symbol id="p-huevos" viewBox="0 0 64 64">
+  <rect x="6" y="30" width="52" height="22" rx="4" fill="currentColor" opacity=".26"/>
+  <ellipse cx="20" cy="28" rx="9" ry="11" fill="currentColor" opacity=".55"/>
+  <ellipse cx="38" cy="26" rx="9" ry="11" fill="currentColor"/>
+  <path d="M6 40h52" stroke="currentColor" stroke-width="2.5" opacity=".4"/>
+</symbol>
+<symbol id="p-dulcedeleche" viewBox="0 0 64 64">
+  <rect x="14" y="20" width="36" height="36" rx="4" fill="currentColor" opacity=".28"/>
+  <rect x="12" y="14" width="40" height="8" rx="3" fill="currentColor"/>
+  <rect x="20" y="30" width="24" height="16" rx="2" fill="currentColor" opacity=".55"/>
+</symbol>
+
+<!-- ============================================ HELADOS -->
+<symbol id="p-helado" viewBox="0 0 64 64">
+  <rect x="20" y="6" width="24" height="34" rx="11" fill="currentColor" opacity=".3"/>
+  <path d="M20 22h24v8H20z" fill="currentColor"/>
+  <rect x="29" y="40" width="6" height="20" rx="3" fill="currentColor" opacity=".5"/>
+</symbol>
+<symbol id="p-potehelado" viewBox="0 0 64 64">
+  <path d="m16 30 3 24a5 5 0 0 0 5 4h16a5 5 0 0 0 5-4l3-24z" fill="currentColor" opacity=".28"/>
+  <rect x="12" y="24" width="40" height="8" rx="3" fill="currentColor"/>
+  <path d="M22 16a6 6 0 0 1 12 0 6 6 0 0 1 8 8H18a6 6 0 0 1 4-8z" fill="currentColor" opacity=".5"/>
+</symbol>
+
+<!-- ============================================ ALMACEN -->
+<symbol id="p-yerba" viewBox="0 0 64 64">
+  <path d="M14 14h36v40a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <path d="M14 14h36v9H14z" fill="currentColor"/>
+  <path d="M32 30c-8 0-12 5-12 11h24c0-6-4-11-12-11z" fill="currentColor" opacity=".55"/>
+  <path d="M32 30v16" stroke="currentColor" stroke-width="2.5"/>
+</symbol>
+<symbol id="p-cafe" viewBox="0 0 64 64">
+  <path d="M16 20h32v30a6 6 0 0 1-6 6H22a6 6 0 0 1-6-6z" fill="currentColor" opacity=".28"/>
+  <rect x="14" y="12" width="36" height="9" rx="3" fill="currentColor"/>
+  <path d="M28 32c0 4 8 4 8 8" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M36 32c0 4-8 4-8 8" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none" opacity=".5"/>
+</symbol>
+<symbol id="p-te" viewBox="0 0 64 64">
+  <path d="M14 22h34v22a10 10 0 0 1-10 10H24a10 10 0 0 1-10-10z" fill="currentColor" opacity=".28"/>
+  <path d="M48 28h5a7 7 0 0 1 0 14h-5" stroke="currentColor" stroke-width="3.5" fill="none"/>
+  <path d="M24 14c0 3-3 3-3 6M32 12c0 4-3 4-3 8M40 14c0 3-3 3-3 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".55"/>
+</symbol>
+<symbol id="p-azucar" viewBox="0 0 64 64">
+  <path d="M12 20h40v34a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <path d="M12 20c4-6 8-8 20-8s16 2 20 8z" fill="currentColor" opacity=".5"/>
+  <rect x="22" y="32" width="9" height="9" rx="1.5" fill="currentColor"/>
+  <rect x="34" y="40" width="9" height="9" rx="1.5" fill="currentColor"/>
+</symbol>
+<symbol id="p-fideos" viewBox="0 0 64 64">
+  <path d="M18 12h28v42a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4z" fill="currentColor" opacity=".24"/>
+  <path d="M24 18v34M32 18v34M40 18v34" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+  <rect x="16" y="8" width="32" height="7" rx="2" fill="currentColor" opacity=".55"/>
+</symbol>
+<symbol id="p-arroz" viewBox="0 0 64 64">
+  <path d="M14 16h36v38a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <path d="M14 16h36v8H14z" fill="currentColor"/>
+  <ellipse cx="25" cy="36" rx="3" ry="5" transform="rotate(-25 25 36)" fill="currentColor" opacity=".7"/>
+  <ellipse cx="35" cy="42" rx="3" ry="5" transform="rotate(20 35 42)" fill="currentColor" opacity=".7"/>
+  <ellipse cx="40" cy="33" rx="3" ry="5" transform="rotate(-10 40 33)" fill="currentColor" opacity=".7"/>
+</symbol>
+<symbol id="p-aceite" viewBox="0 0 64 64">
+  <path d="M24 14h16v6c0 4 6 6 6 12v22a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V32c0-6 6-8 6-12z" fill="currentColor" opacity=".28"/>
+  <rect x="18" y="34" width="28" height="14" rx="2" fill="currentColor"/>
+  <rect x="27" y="6" width="10" height="9" rx="2" fill="currentColor" opacity=".55"/>
+</symbol>
+<symbol id="p-conserva" viewBox="0 0 64 64">
+  <rect x="16" y="14" width="32" height="38" rx="3" fill="currentColor" opacity=".28"/>
+  <ellipse cx="32" cy="15" rx="16" ry="4" fill="currentColor" opacity=".5"/>
+  <rect x="16" y="26" width="32" height="14" fill="currentColor"/>
+  <path d="M16 20h32M16 48h32" stroke="currentColor" stroke-width="2" opacity=".4"/>
+</symbol>
+<symbol id="p-mermelada" viewBox="0 0 64 64">
+  <path d="M18 24h28v30a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4z" fill="currentColor" opacity=".28"/>
+  <rect x="16" y="16" width="32" height="9" rx="3" fill="currentColor"/>
+  <path d="M22 34h20v12H22z" fill="currentColor" opacity=".55"/>
+  <circle cx="28" cy="40" r="2" fill="currentColor"/>
+  <circle cx="36" cy="41" r="2" fill="currentColor"/>
+</symbol>
+
+<!-- ============================================ LIMPIEZA -->
+<symbol id="p-lavandina" viewBox="0 0 64 64">
+  <path d="M18 22h28v32a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4z" fill="currentColor" opacity=".28"/>
+  <path d="M26 10h12v12H26z" fill="currentColor" opacity=".5"/>
+  <rect x="24" y="4" width="16" height="8" rx="2" fill="currentColor"/>
+  <rect x="23" y="32" width="18" height="14" rx="2" fill="currentColor"/>
+</symbol>
+<symbol id="p-detergente" viewBox="0 0 64 64">
+  <path d="M20 26h24v28a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4z" fill="currentColor" opacity=".28"/>
+  <path d="M26 8h12v18H26z" fill="currentColor" opacity=".45"/>
+  <rect x="27" y="4" width="10" height="6" rx="2" fill="currentColor"/>
+  <circle cx="32" cy="40" r="6" fill="currentColor"/>
+</symbol>
+<symbol id="p-papelhigienico" viewBox="0 0 64 64">
+  <rect x="12" y="18" width="40" height="30" rx="6" fill="currentColor" opacity=".26"/>
+  <ellipse cx="18" cy="33" rx="6" ry="15" fill="currentColor" opacity=".5"/>
+  <ellipse cx="18" cy="33" rx="2.5" ry="6" fill="currentColor"/>
+  <path d="M52 33v10c0 3-4 5-8 4" stroke="currentColor" stroke-width="3" fill="none" opacity=".5"/>
+</symbol>
+<symbol id="p-esponja" viewBox="0 0 64 64">
+  <rect x="8" y="24" width="48" height="18" rx="4" fill="currentColor" opacity=".28"/>
+  <rect x="8" y="24" width="48" height="7" rx="3" fill="currentColor"/>
+  <circle cx="20" cy="37" r="2" fill="currentColor" opacity=".6"/>
+  <circle cx="30" cy="36" r="2" fill="currentColor" opacity=".6"/>
+  <circle cx="40" cy="38" r="2" fill="currentColor" opacity=".6"/>
+</symbol>
+<symbol id="p-jabonpolvo" viewBox="0 0 64 64">
+  <path d="M12 18h40v36a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <path d="M12 18h40v8H12z" fill="currentColor"/>
+  <circle cx="26" cy="38" r="5" fill="currentColor" opacity=".6"/>
+  <circle cx="38" cy="43" r="4" fill="currentColor" opacity=".6"/>
+  <circle cx="38" cy="33" r="3" fill="currentColor" opacity=".6"/>
+</symbol>
+
+<!-- ============================================ PERFUMERIA -->
+<symbol id="p-shampoo" viewBox="0 0 64 64">
+  <path d="M20 22h24v32a4 4 0 0 1-4 4H24a4 4 0 0 1-4-4z" fill="currentColor" opacity=".28"/>
+  <rect x="26" y="12" width="12" height="11" rx="2" fill="currentColor" opacity=".5"/>
+  <rect x="24" y="6" width="16" height="8" rx="3" fill="currentColor"/>
+  <rect x="24" y="32" width="16" height="14" rx="2" fill="currentColor"/>
+</symbol>
+<symbol id="p-jabon" viewBox="0 0 64 64">
+  <rect x="10" y="22" width="44" height="22" rx="8" fill="currentColor" opacity=".3"/>
+  <rect x="10" y="22" width="44" height="22" rx="8" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".5"/>
+  <ellipse cx="32" cy="33" rx="11" ry="6" fill="currentColor"/>
+</symbol>
+<symbol id="p-pastadental" viewBox="0 0 64 64">
+  <path d="m14 24 36-6v28l-36-6z" fill="currentColor" opacity=".28"/>
+  <path d="M50 18h4a2 2 0 0 1 2 2v24a2 2 0 0 1-2 2h-4z" fill="currentColor" opacity=".5"/>
+  <path d="M14 24 6 28v8l8 4z" fill="currentColor"/>
+  <path d="M22 26v12M30 25v14" stroke="currentColor" stroke-width="2" opacity=".45"/>
+</symbol>
+<symbol id="p-desodorante" viewBox="0 0 64 64">
+  <rect x="21" y="20" width="22" height="38" rx="5" fill="currentColor" opacity=".28"/>
+  <rect x="21" y="32" width="22" height="12" fill="currentColor"/>
+  <rect x="25" y="10" width="14" height="11" rx="3" fill="currentColor" opacity=".55"/>
+  <rect x="27" y="4" width="10" height="8" rx="2" fill="currentColor"/>
+</symbol>
+<symbol id="p-panales" viewBox="0 0 64 64">
+  <path d="M8 22h48v14c0 10-10 18-24 18S8 46 8 36z" fill="currentColor" opacity=".28"/>
+  <path d="M8 22h48v8H8z" fill="currentColor"/>
+  <path d="M20 36c6 6 18 6 24 0" stroke="currentColor" stroke-width="3" fill="none" opacity=".55"/>
+</symbol>
+<symbol id="p-preservativo" viewBox="0 0 64 64">
+  <rect x="14" y="20" width="36" height="24" rx="4" fill="currentColor" opacity=".28"/>
+  <rect x="14" y="20" width="36" height="24" rx="4" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".5"/>
+  <circle cx="32" cy="32" r="7" fill="currentColor"/>
+  <path d="M20 20v24M44 20v24" stroke="currentColor" stroke-width="2" opacity=".35"/>
+</symbol>
+
+<!-- ============================================ LIBRERIA -->
+<symbol id="p-cuaderno" viewBox="0 0 64 64">
+  <rect x="14" y="8" width="36" height="48" rx="3" fill="currentColor" opacity=".26"/>
+  <rect x="14" y="8" width="9" height="48" fill="currentColor" opacity=".5"/>
+  <path d="M28 22h16M28 32h16M28 42h11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="18" cy="18" r="2" fill="currentColor"/>
+  <circle cx="18" cy="32" r="2" fill="currentColor"/>
+  <circle cx="18" cy="46" r="2" fill="currentColor"/>
+</symbol>
+<symbol id="p-lapicera" viewBox="0 0 64 64">
+  <path d="m40 8 14 14-28 28-14-14z" fill="currentColor" opacity=".3"/>
+  <path d="M12 36 6 58l22-6z" fill="currentColor"/>
+  <path d="m40 8 14 14 4-4a5 5 0 0 0 0-7l-3-3a5 5 0 0 0-7 0z" fill="currentColor" opacity=".55"/>
+</symbol>
+<symbol id="p-tijera" viewBox="0 0 64 64">
+  <path d="M20 12 44 46M44 12 20 46" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none" opacity=".55"/>
+  <circle cx="18" cy="52" r="7" fill="none" stroke="currentColor" stroke-width="4"/>
+  <circle cx="46" cy="52" r="7" fill="none" stroke="currentColor" stroke-width="4"/>
+</symbol>
+<symbol id="p-pegamento" viewBox="0 0 64 64">
+  <path d="M22 24h20v30a4 4 0 0 1-4 4H26a4 4 0 0 1-4-4z" fill="currentColor" opacity=".28"/>
+  <path d="M28 12h8v12h-8z" fill="currentColor" opacity=".5"/>
+  <path d="m32 2 5 10H27z" fill="currentColor"/>
+  <rect x="25" y="34" width="14" height="12" rx="2" fill="currentColor"/>
+</symbol>
+
+<!-- ============================================ SERVICIOS -->
+<symbol id="p-recarga" viewBox="0 0 64 64">
+  <rect x="18" y="6" width="28" height="52" rx="5" fill="currentColor" opacity=".26"/>
+  <rect x="18" y="6" width="28" height="52" rx="5" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".5"/>
+  <path d="m34 20-9 15h6l-2 11 9-16h-6z" fill="currentColor"/>
+</symbol>
+<symbol id="p-transporte" viewBox="0 0 64 64">
+  <rect x="8" y="18" width="48" height="28" rx="5" fill="currentColor" opacity=".28"/>
+  <rect x="14" y="26" width="16" height="12" rx="2" fill="currentColor"/>
+  <path d="M36 30h14M36 36h9" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+</symbol>
+
+<!-- ============================================ GENERICOS POR CATEGORIA -->
+<symbol id="p-generico" viewBox="0 0 64 64">
+  <path d="M12 20h40v34a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4z" fill="currentColor" opacity=".26"/>
+  <path d="m12 20 5-8h30l5 8z" fill="currentColor" opacity=".5"/>
+  <rect x="22" y="32" width="20" height="12" rx="2" fill="currentColor"/>
+</symbol>
+<symbol id="p-balanza" viewBox="0 0 64 64">
+  <path d="M10 46h44l-6-18H16z" fill="currentColor" opacity=".28"/>
+  <rect x="6" y="46" width="52" height="8" rx="3" fill="currentColor"/>
+  <path d="M32 28V16" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="32" cy="12" r="6" fill="currentColor" opacity=".55"/>
+</symbol>
+</svg>

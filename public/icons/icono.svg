@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0f1115"/>
+  <g>
+    <rect x="32" y="112.64" width="74.66666666666667" height="98.56" fill="#2563eb"/><rect x="106.66666666666667" y="112.64" width="74.66666666666667" height="98.56" fill="#f2f4f8"/><rect x="181.33333333333334" y="112.64" width="74.66666666666667" height="98.56" fill="#2563eb"/><rect x="256" y="112.64" width="74.66666666666667" height="98.56" fill="#f2f4f8"/><rect x="330.6666666666667" y="112.64" width="74.66666666666667" height="98.56" fill="#2563eb"/><rect x="405.33333333333337" y="112.64" width="74.66666666666667" height="98.56" fill="#f2f4f8"/>
+    <rect x="32" y="211.2" width="448" height="232.96" fill="#171a21" stroke="#2563eb" stroke-width="10" rx="12"/>
+    <text x="256" y="381.44"
+          font-family="Inter, Arial, sans-serif" font-size="188.16" font-weight="700"
+          fill="#f2f4f8" text-anchor="middle">K</text>
+  </g>
+</svg>

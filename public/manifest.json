@@ -1,0 +1,25 @@
+{
+  "name": "Kiosko App",
+  "short_name": "Kiosko",
+  "description": "Gestión integral para kioscos y maxikioscos. Funciona sin conexión.",
+  "start_url": "/pos",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "lang": "es-AR",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "shopping"],
+  "icons": [
+    { "src": "/icons/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Cobrar", "url": "/pos", "description": "Abrir el punto de venta" },
+    { "name": "Balanza", "url": "/balanza", "description": "Vender por peso" },
+    { "name": "Caja", "url": "/caja", "description": "Movimientos y arqueo" }
+  ]
+}
