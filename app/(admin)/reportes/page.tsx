@@ -28,7 +28,7 @@ import {
 import { contextoAdmin } from "@/lib/admin";
 import { formatearPesos } from "@/lib/money";
 import { urlVidriera } from "@/lib/url";
-import { fechaLocal, nombreDia } from "@/lib/utils";
+import { fechaLarga, fechaLocal, nombreDia } from "@/lib/utils";
 import { PedidosVivos } from "./pedidos-vivos";
 import { HeatmapHoras } from "./heatmap";
 
@@ -105,7 +105,7 @@ export default async function Reportes() {
       <EncabezadoPagina
         className="mb-0"
         titulo="Hoy"
-        bajada={`${nombreDia()} ${new Date().toLocaleDateString("es-AR")}`}
+        bajada={`${nombreDia()} ${fechaLarga()}`}
         acciones={
           <>
             <Pildora tono={totalHoy > 0 ? "plata" : "neutral"}>

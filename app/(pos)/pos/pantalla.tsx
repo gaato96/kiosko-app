@@ -18,7 +18,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Check, LayoutGrid, Receipt, Search, Store, UserRound, Wallet, Zap } from "lucide-react";
+import {
+  Check,
+  LayoutGrid,
+  Receipt,
+  Search,
+  ShoppingBasket,
+  Store,
+  UserRound,
+  Wallet,
+  Zap,
+} from "lucide-react";
 import { EstadoSync } from "@/components/estado-sync";
 import { AltaExpress } from "@/components/pos/alta-express";
 import { AperturaCaja } from "@/components/pos/apertura-caja";
@@ -65,6 +75,10 @@ export function PantallaPos() {
   // cuelgan de una sesión de caja, el arqueo del turno no cierra nunca.
   const [cajaId, setCajaId] = useState<string | null | undefined>(undefined);
   const [clienteAbierto, setClienteAbierto] = useState(false);
+  // En celular el ticket no puede vivir siempre en pantalla: se comía el 43%
+  // del alto y dejaba dos productos por fila. Vive plegado en una barra y se
+  // abre a pantalla completa cuando hace falta.
+  const [ticketAbierto, setTicketAbierto] = useState(false);
   const [excesoCredito, setExcesoCredito] = useState<Cliente | null>(null);
 
   const buscadorRef = useRef<HTMLInputElement>(null);
@@ -205,6 +219,17 @@ export function PantallaPos() {
   }
 
   const sinResultados = consulta.trim() !== "" && resultados.length === 0;
+
+  const abrirBalanza = useCallback(() => {
+    const peso = resultados.find((p) => p.tipo_venta === "PESO");
+    if (peso) {
+      setProductoPeso(peso);
+      setVista("balanza");
+      return;
+    }
+    setConsulta("");
+    setAviso("Buscá el producto de fiambrería y tocalo: abre la balanza directo.");
+  }, [resultados]);
 
   const porCategoria = useMemo(() => {
     const mapa = new Map<string, { color: string; nombre: string }>();
@@ -390,7 +415,7 @@ export function PantallaPos() {
                 F1 a F12
               </span>
             </p>
-            <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fill,minmax(7.25rem,1fr))]">
+            <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(6rem,1fr))] sm:gap-2.5 sm:[grid-template-columns:repeat(auto-fill,minmax(7.25rem,1fr))]">
               {teclas.slice(0, 12).map((p) => (
                 <ProductoCard
                   key={p.id}
@@ -404,7 +429,7 @@ export function PantallaPos() {
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 pb-24 lg:pb-3">
           {sinResultados ? (
             <EstadoVacio
               titulo={`No hay ningún "${consulta}"`}
@@ -421,7 +446,7 @@ export function PantallaPos() {
               detalle="Empezá por el catálogo semilla: tildás lo que vendés y le ponés precio. No hace falta cargar nada a mano."
             />
           ) : (
-            <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fill,minmax(7.75rem,1fr))]">
+            <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(6.25rem,1fr))] sm:gap-2.5 sm:[grid-template-columns:repeat(auto-fill,minmax(7.75rem,1fr))]">
               {resultados.map((p) => (
                 <ProductoCard
                   key={p.id}
@@ -436,20 +461,37 @@ export function PantallaPos() {
         </div>
       </section>
 
+      {/* Escritorio y tablet horizontal: el ticket siempre a la vista. */}
       <PanelTicket
-        className="order-3 h-[22rem] w-full shrink-0 lg:h-full lg:w-[23rem] xl:w-[25rem]"
+        className="order-3 hidden h-full w-[23rem] shrink-0 lg:flex xl:w-[25rem]"
         onCobrar={() => setVista("cobro")}
-        onBalanza={() => {
-          const peso = resultados.find((p) => p.tipo_venta === "PESO");
-          if (peso) {
-            setProductoPeso(peso);
-            setVista("balanza");
-          } else {
-            setConsulta("");
-            setAviso("Buscá el producto de fiambrería y tocalo: abre la balanza directo.");
-          }
-        }}
+        onBalanza={abrirBalanza}
       />
+
+      {/* Celular: barra plegada abajo. Un toque la abre entera. */}
+      {!ticketAbierto ? (
+        <BarraTicket total={total} lineas={ticket.lineas.length} onAbrir={() => setTicketAbierto(true)} />
+      ) : (
+        <div className="fixed inset-0 z-40 flex flex-col bg-[rgb(19_26_38/0.5)] lg:hidden">
+          <button
+            aria-label="Cerrar el ticket"
+            className="flex-1 cursor-pointer"
+            onClick={() => setTicketAbierto(false)}
+          />
+          <PanelTicket
+            className="max-h-[85dvh] w-full shrink-0 animate-[subir_0.28s_cubic-bezier(0.16,1,0.3,1)]"
+            onCerrar={() => setTicketAbierto(false)}
+            onCobrar={() => {
+              setTicketAbierto(false);
+              setVista("cobro");
+            }}
+            onBalanza={() => {
+              setTicketAbierto(false);
+              abrirBalanza();
+            }}
+          />
+        </div>
+      )}
 
       <Hoja abierta={altaAbierta} onCerrar={() => setAltaAbierta(false)} titulo="Producto nuevo">
         {sesion.comercioId ? (
@@ -652,5 +694,43 @@ function BotonCategoria({
         {nombre}
       </span>
     </button>
+  );
+}
+
+/**
+ * El ticket plegado, solo en celular. Muestra lo único que hace falta ver
+ * mientras se cargan productos: cuánto va y cuántos ítems hay.
+ */
+function BarraTicket({
+  total,
+  lineas,
+  onAbrir,
+}: {
+  total: number;
+  lineas: number;
+  onAbrir: () => void;
+}) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 p-2.5 shadow-[0_-8px_24px_-12px_rgb(19_26_38/0.3)] backdrop-blur-lg lg:hidden">
+      <button
+        onClick={() => {
+          haptico(8);
+          onAbrir();
+        }}
+        disabled={lineas === 0}
+        className="presion flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-[var(--radio)] bg-tinta px-4 text-brand-fg shadow-[var(--sombra-2)] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
+          <ShoppingBasket size={18} aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1 text-left">
+          <span className="block text-xs opacity-75">
+            {lineas === 0 ? "Ticket vacío" : `${lineas} ${lineas === 1 ? "ítem" : "ítems"}`}
+          </span>
+          <span className="num block text-xl font-bold leading-none">{formatearPesos(total)}</span>
+        </span>
+        <span className="shrink-0 text-sm font-bold">Ver ticket</span>
+      </button>
+    </div>
   );
 }

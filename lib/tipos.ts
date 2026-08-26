@@ -308,8 +308,14 @@ export type ProductoVidriera = {
   descripcion: string | null;
   categoria_id: string | null;
   tipo_venta: TipoVenta;
+  /** Precio de lista. Cuando hay oferta se muestra tachado. */
   precio_venta_centavos: number | null;
   precio_por_kg_centavos: number | null;
+  precio_oferta_centavos: number | null;
+  oferta_hasta: string | null;
+  /** El que se cobra hoy. Ya resuelve si la oferta está vigente. */
+  precio_vigente_centavos: number | null;
+  en_oferta: boolean;
   imagen_url: string | null;
   emoji: string | null;
   color: string | null;

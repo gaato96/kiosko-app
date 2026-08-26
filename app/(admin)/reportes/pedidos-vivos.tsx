@@ -19,7 +19,7 @@ import { Pildora } from "@/components/ui/pildora";
 import { formatearPesos } from "@/lib/money";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import type { PedidoVidriera } from "@/lib/tipos";
-import { cn } from "@/lib/utils";
+import { cn, horaCorta } from "@/lib/utils";
 
 const ABIERTOS = ["NUEVO", "ACEPTADO", "PREPARANDO"];
 
@@ -190,10 +190,7 @@ export function PedidosVivos({
                   )}
                   {p.tipo_entrega === "ENVIO" ? "Envío" : "Retira en el local"}
                   <span aria-hidden>·</span>
-                  {new Date(p.creado_en).toLocaleTimeString("es-AR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {horaCorta(p.creado_en)}
                 </p>
               </div>
             </div>

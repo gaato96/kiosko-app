@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { supabaseAnon } from "@/lib/supabase/server";
-import { Vidriera } from "./vidriera";
+import { Tienda } from "./tienda";
 import type { ProductoVidriera } from "@/lib/tipos";
 
 /**
@@ -49,7 +49,7 @@ export default async function PaginaVidriera({ params }: Props) {
 
   const sb = supabaseAnon();
 
-  const [{ data: productos }, { data: categorias }, { data: zonas }, { data: config }] =
+  const [{ data: productos }, { data: categorias }, { data: zonas }, { data: config }, { data: ranking }] =
     await Promise.all([
       sb.from("vidriera_productos").select("*").eq("comercio_id", comercio.id).limit(1000),
       sb.from("categorias").select("id, nombre, emoji, color, orden").eq("comercio_id", comercio.id).order("orden"),
@@ -63,13 +63,16 @@ export default async function PaginaVidriera({ params }: Props) {
         .select("vidriera_titulo, vidriera_mensaje, vidriera_horarios, mostrar_sin_stock, monto_minimo_envio_centavos")
         .eq("comercio_id", comercio.id)
         .maybeSingle(),
+      // Lo que más sale del estante en el último mes. Se calcula de las ventas
+      // reales: nadie tiene que mantener una lista de "destacados" a mano.
+      sb.rpc("mas_vendidos", { p_comercio: comercio.id, p_dias: 30, p_limite: 12 }),
     ]);
 
   const lista = (productos ?? []) as ProductoVidriera[];
   const mostrarSinStock = config?.mostrar_sin_stock ?? true;
 
   return (
-    <Vidriera
+    <Tienda
       comercio={{
         id: comercio.id,
         nombre: comercio.nombre,
@@ -84,6 +87,7 @@ export default async function PaginaVidriera({ params }: Props) {
       productos={mostrarSinStock ? lista : lista.filter((p) => p.disponible)}
       categorias={categorias ?? []}
       zonas={zonas ?? []}
+      masVendidos={((ranking ?? []) as Array<{ producto_id: string }>).map((r) => r.producto_id)}
     />
   );
 }

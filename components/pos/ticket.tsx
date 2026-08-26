@@ -15,7 +15,7 @@
  * El total va con aria-live: se lee de reojo mientras el cliente saca la plata.
  */
 
-import { Minus, Plus, Scale, Trash2, TriangleAlert, UserRound } from "lucide-react";
+import { ChevronDown, Minus, Plus, Scale, Trash2, TriangleAlert, UserRound } from "lucide-react";
 import { Boton } from "@/components/ui/boton";
 import { formatearPesos } from "@/lib/money";
 import { formatearPeso } from "@/lib/peso";
@@ -25,10 +25,13 @@ import { cn, haptico } from "@/lib/utils";
 export function PanelTicket({
   onCobrar,
   onBalanza,
+  onCerrar,
   className,
 }: {
   onCobrar: () => void;
   onBalanza: () => void;
+  /** Solo en celular, donde el ticket se abre como hoja sobre el catálogo. */
+  onCerrar?: () => void;
   className?: string;
 }) {
   const lineas = usarTicket((s) => s.lineas);
@@ -58,20 +61,32 @@ export function PanelTicket({
             </p>
           </div>
 
-          {lineas.length > 0 ? (
-            <button
-              onClick={() => {
-                if (confirm("¿Vaciar el ticket?")) {
-                  haptico(20);
-                  vaciar();
-                }
-              }}
-              aria-label="Vaciar el ticket"
-              className="presion flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-papel-tinta/45 hover:bg-peligro/10 hover:text-danger"
-            >
-              <Trash2 size={16} />
-            </button>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-1">
+            {onCerrar ? (
+              <button
+                onClick={onCerrar}
+                aria-label="Cerrar el ticket"
+                className="presion flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-papel-tinta/45 hover:bg-papel-tinta/5 hover:text-papel-tinta lg:hidden"
+              >
+                <ChevronDown size={18} />
+              </button>
+            ) : null}
+
+            {lineas.length > 0 ? (
+              <button
+                onClick={() => {
+                  if (confirm("¿Vaciar el ticket?")) {
+                    haptico(20);
+                    vaciar();
+                  }
+                }}
+                aria-label="Vaciar el ticket"
+                className="presion flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-papel-tinta/45 hover:bg-peligro/10 hover:text-danger"
+              >
+                <Trash2 size={16} />
+              </button>
+            ) : null}
+          </div>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto sin-scrollbar">

@@ -1,3 +1,7 @@
+-- ZONA HORARIA: todas las fechas de negocio (dia de venta, heatmap de horas,
+-- historial de cajas) se calculan en America/Argentina/Buenos_Aires, no en UTC.
+-- Sin eso, una venta de las 21:00 cae en el dia siguiente y el panel del dia
+-- la pierde. El dominio es argentino: la zona esta fijada a proposito.
 -- ============================================================================
 -- Kiosko App — Esquema completo
 -- Postgres 15+ / Supabase
@@ -1745,7 +1749,7 @@ begin
     into v_hoy
     from ventas
    where comercio_id = v_comercio and estado = 'COMPLETADA'
-     and creado_en::date = p_fecha;
+     and (creado_en at time zone 'America/Argentina/Buenos_Aires')::date = p_fecha;
 
   select jsonb_build_object(
            'total', coalesce(sum(total_centavos), 0),
@@ -1753,14 +1757,14 @@ begin
     into v_semana
     from ventas
    where comercio_id = v_comercio and estado = 'COMPLETADA'
-     and creado_en::date = p_fecha - 7;
+     and (creado_en at time zone 'America/Argentina/Buenos_Aires')::date = p_fecha - 7;
 
   select coalesce(jsonb_object_agg(medio, monto), '{}'::jsonb) into v_medios
     from (select vp.medio::text as medio, sum(vp.monto_centavos) as monto
             from ventas_pagos vp
             join ventas v on v.id = vp.venta_id
            where v.comercio_id = v_comercio and v.estado = 'COMPLETADA'
-             and v.creado_en::date = p_fecha
+             and (v.creado_en at time zone 'America/Argentina/Buenos_Aires')::date = p_fecha
            group by vp.medio) t;
 
   return jsonb_build_object('fecha', p_fecha, 'hoy', v_hoy,
@@ -1774,10 +1778,10 @@ declare v_comercio uuid := public.exigir_tenant(null);
 begin
   perform public.exigir_dueno();
   return query
-    select extract(hour from v.creado_en)::integer, count(*), coalesce(sum(v.total_centavos), 0)
+    select extract(hour from v.creado_en at time zone 'America/Argentina/Buenos_Aires')::integer, count(*), coalesce(sum(v.total_centavos), 0)
       from ventas v
      where v.comercio_id = v_comercio and v.estado = 'COMPLETADA'
-       and v.creado_en::date between p_desde and p_hasta
+       and (v.creado_en at time zone 'America/Argentina/Buenos_Aires')::date between p_desde and p_hasta
      group by 1 order by 1;
 end $fn$;
 
@@ -1803,7 +1807,7 @@ begin
       from ventas_items vi
       join ventas v on v.id = vi.venta_id
      where v.comercio_id = v_comercio and v.estado = 'COMPLETADA'
-       and v.creado_en::date between p_desde and p_hasta
+       and (v.creado_en at time zone 'America/Argentina/Buenos_Aires')::date between p_desde and p_hasta
      group by vi.producto_id
      order by 6 desc
      limit p_limite;
@@ -1849,7 +1853,7 @@ begin
       from arqueos a
       left join usuarios_comercio u on u.id = a.declarado_por
      where a.comercio_id = v_comercio
-       and a.declarado_en::date between p_desde and p_hasta
+       and (a.declarado_en at time zone 'America/Argentina/Buenos_Aires')::date between p_desde and p_hasta
      group by a.declarado_por
      order by 4 asc;
 end $fn$;
@@ -1946,7 +1950,8 @@ begin
   end if;
 
   -- Regla del POS §7: solo se anulan ventas del día en curso.
-  if v_venta.creado_en::date <> current_date and not public.es_dueno() then
+  if (v_venta.creado_en at time zone 'America/Argentina/Buenos_Aires')::date <> (now() at time zone 'America/Argentina/Buenos_Aires')::date
+     and not public.es_dueno() then
     raise exception 'Solo se anulan ventas del día. Pedile al dueño que la revise.';
   end if;
 

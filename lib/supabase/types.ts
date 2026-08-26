@@ -245,6 +245,10 @@ export type Database = {
       rentabilidad_productos: { Args: { p_desde: string; p_hasta: string; p_limite: number }; Returns: unknown };
       productos_muertos: { Args: { p_dias: number }; Returns: unknown };
       diferencias_por_empleado: { Args: { p_desde: string; p_hasta: string }; Returns: unknown };
+      mas_vendidos: {
+        Args: { p_comercio: string; p_dias?: number; p_limite?: number };
+        Returns: Array<{ producto_id: string; unidades: number }>;
+      };
     };
     Enums: {
       rol_usuario: "dueno" | "empleado";
