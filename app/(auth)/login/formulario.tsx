@@ -68,7 +68,7 @@ function Formulario() {
           required
           value={mail}
           onChange={(e) => setMail(e.target.value)}
-          placeholder="kiosco@ejemplo.com"
+          placeholder="kiosko@ejemplo.com"
         />
       </Campo>
 

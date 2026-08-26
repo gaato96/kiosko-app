@@ -924,7 +924,7 @@ function BarraCarrito({
   onAccion: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 p-3 shadow-[0_-8px_28px_-12px_rgb(19_26_38/0.25)] backdrop-blur-lg">
+    <div className="borde-seguro fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-3 pt-3 shadow-[0_-8px_28px_-12px_rgb(19_26_38/0.25)] backdrop-blur-lg">
       <div className="mx-auto flex max-w-5xl items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs text-text-muted">

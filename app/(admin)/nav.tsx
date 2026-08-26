@@ -13,6 +13,7 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import type { Rol } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,6 +24,7 @@ import { cn } from "@/lib/utils";
 const GRUPOS = [
   {
     rotulo: "Mirar",
+    soloDueno: true,
     items: [
       { href: "/reportes", icono: BarChart3, texto: "Panel" },
       { href: "/caja-historial", icono: Wallet, texto: "Cajas" },
@@ -30,6 +32,7 @@ const GRUPOS = [
   },
   {
     rotulo: "Mercadería",
+    soloDueno: true,
     items: [
       { href: "/productos", icono: ScanBarcode, texto: "Productos" },
       { href: "/stock", icono: Boxes, texto: "Stock" },
@@ -39,12 +42,13 @@ const GRUPOS = [
   {
     rotulo: "Vender",
     items: [
-      { href: "/clientes", icono: Users, texto: "Fiados" },
-      { href: "/vidriera", icono: Store, texto: "Vidriera" },
+      { href: "/clientes", icono: Users, texto: "Fiados", soloDueno: true },
+      { href: "/vidriera", icono: Store, texto: "Pedidos" },
     ],
   },
   {
     rotulo: "Cuenta",
+    soloDueno: true,
     items: [{ href: "/config", icono: Settings, texto: "Configuración" }],
   },
 ] as const;
@@ -57,15 +61,24 @@ const GRUPOS = [
  * grupos disueltos: en el celular el dueño entra a una sección puntual, no
  * navega el árbol completo.
  */
-export function NavAdmin() {
+export function NavAdmin({ rol }: { rol: Rol | "anon" }) {
   const ruta = usePathname();
   const activo = (href: string) => ruta === href || ruta.startsWith(`${href}/`);
+
+  // Al empleado no se le muestran secciones a las que el middleware le va a
+  // contestar 403. Un link que lleva a una pared no es un permiso, es basura.
+  const grupos = GRUPOS.map((g) => ({
+    ...g,
+    items: g.items.filter(
+      (i) => rol === "dueno" || (!("soloDueno" in g && g.soloDueno) && !("soloDueno" in i && i.soloDueno)),
+    ),
+  })).filter((g) => g.items.length > 0);
 
   return (
     <nav className="flex-1 overflow-y-auto">
       {/* Escritorio: agrupada y vertical */}
       <div className="hidden flex-col gap-5 px-3 pb-4 lg:flex">
-        {GRUPOS.map((g) => (
+        {grupos.map((g) => (
           <div key={g.rotulo} className="flex flex-col gap-0.5">
             <p className="rotulo px-3 pb-1.5">{g.rotulo}</p>
             {g.items.map(({ href, icono: Icono, texto }) => (
@@ -90,7 +103,7 @@ export function NavAdmin() {
 
       {/* Celular y tablet: una sola tira */}
       <div className="flex gap-1.5 overflow-x-auto p-2 sin-scrollbar lg:hidden">
-        {GRUPOS.flatMap((g) =>
+        {grupos.flatMap((g) =>
           g.items.map(({ href, icono: Icono, texto }) => (
             <Link
               key={href}

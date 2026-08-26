@@ -9,9 +9,18 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { tenantDeClaims } from "./auth";
+import type { Rol } from "./tipos";
 import { supabaseServer } from "./supabase/server";
 
-export async function contextoAdmin() {
+/**
+ * Contexto de una pantalla del admin.
+ *
+ * Casi todo el admin es del dueño y por eso ese es el default. La excepción es
+ * la bandeja de pedidos, que la usa quien esté atendiendo: se declara pasando
+ * `roles`. Esto es para decidir qué se muestra; el permiso de verdad lo aplica
+ * RLS y, en las escrituras, `exigir_dueno()` adentro de cada RPC.
+ */
+export async function contextoAdmin({ roles = ["dueno"] }: { roles?: Rol[] } = {}) {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getClaims();
 
@@ -19,9 +28,14 @@ export async function contextoAdmin() {
 
   const tenant = tenantDeClaims(data.claims);
   if (!tenant.comercioId) redirect("/onboarding");
-  if (tenant.rol !== "dueno") redirect("/sin-permiso");
+  if (tenant.rol === "anon" || !roles.includes(tenant.rol)) redirect("/sin-permiso");
 
-  return { supabase, comercioId: tenant.comercioId, usuarioId: data.claims.sub };
+  return {
+    supabase,
+    comercioId: tenant.comercioId,
+    usuarioId: data.claims.sub,
+    rol: tenant.rol,
+  };
 }
 
 export { COLUMNAS_PRODUCTO, COLUMNAS_VENTA, COLUMNAS_VENTA_ITEM } from "./columnas";

@@ -19,6 +19,7 @@
 import { Scale } from "lucide-react";
 import { Ilustracion } from "@/components/ui/ilustracion";
 import { formatearPesos } from "@/lib/money";
+import { descuentoPct, precioAnterior, precioVigente } from "@/lib/producto";
 import type { Producto } from "@/lib/tipos";
 import { cn, haptico } from "@/lib/utils";
 
@@ -34,7 +35,12 @@ export function ProductoCard({
   onElegir: (p: Producto) => void;
 }) {
   const esPeso = producto.tipo_venta === "PESO";
-  const precio = esPeso ? producto.precio_por_kg_centavos : producto.precio_venta_centavos;
+  // El precio que se muestra es EL QUE SE VA A COBRAR. Si hay oferta vigente,
+  // es el de oferta: mostrar el de lista y cobrar otro es una discusión con el
+  // cliente que ya lo vio en la Vidriera.
+  const precio = precioVigente(producto);
+  const antes = precioAnterior(producto);
+  const descuento = descuentoPct(producto);
   const sinStock = producto.controla_stock && producto.stock_actual <= 0;
   const tinte = producto.color ?? color ?? "#56617a";
 
@@ -44,7 +50,7 @@ export function ProductoCard({
         haptico(12);
         onElegir(producto);
       }}
-      aria-label={`${producto.nombre}, ${formatearPesos(precio ?? 0)}${esPeso ? " por kilo" : ""}`}
+      aria-label={`${producto.nombre}, ${formatearPesos(precio)}${esPeso ? " por kilo" : ""}${antes ? ", en oferta" : ""}`}
       style={{ ["--tinte" as string]: tinte }}
       className={cn(
         "presion group relative flex cursor-pointer flex-col gap-2 rounded-[var(--radio-lg)] p-2.5 text-left",
@@ -88,6 +94,11 @@ export function ProductoCard({
             <Scale size={13} aria-hidden />
           </span>
         ) : null}
+        {descuento > 0 ? (
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-plata px-1.5 py-0.5 text-[0.625rem] font-bold leading-tight text-plata-fg shadow-[var(--sombra-1)]">
+            −{descuento}%
+          </span>
+        ) : null}
         {sinStock ? (
           <span className="absolute inset-x-0 bottom-0 bg-warning/90 py-0.5 text-center text-[0.625rem] font-bold uppercase tracking-wide text-white">
             Sin stock
@@ -99,11 +110,16 @@ export function ProductoCard({
         {producto.nombre}
       </span>
 
-      <span className="flex items-baseline gap-1 px-0.5">
+      <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 px-0.5">
         <span className="num text-base font-bold leading-none text-text">
-          {formatearPesos(precio ?? 0)}
+          {formatearPesos(precio)}
         </span>
         {esPeso ? <span className="text-[0.6875rem] text-text-sutil">/kg</span> : null}
+        {antes ? (
+          <span className="num text-[0.6875rem] leading-none text-text-sutil line-through">
+            {formatearPesos(antes)}
+          </span>
+        ) : null}
       </span>
     </button>
   );

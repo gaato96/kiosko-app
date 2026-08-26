@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Wallet } from "lucide-react";
 import Link from "next/link";
@@ -34,6 +35,7 @@ import { horaCorta } from "@/lib/utils";
 
 export function PantallaCaja() {
   const sesion = usarSesion();
+  const parametros = useSearchParams();
   const [caja, setCaja] = useState<CajaSesion | null>(null);
   const [cargando, setCargando] = useState(false);
   const [movimientoAbierto, setMovimientoAbierto] = useState<TipoCajaMov | null>(null);
@@ -45,6 +47,21 @@ export function PantallaCaja() {
       usarSesion.getState().definirCaja(c?.id ?? null);
     });
   }, [sesion.dispositivoId]);
+
+  /**
+   * `?hacer=gasto` y `?hacer=cierre` abren directo la hoja que corresponde.
+   *
+   * Es lo que hace que un atajo del panel valga la pena: "anotar un gasto"
+   * tiene que dejarte escribiendo el monto, no mirando la pantalla de caja
+   * para que después busques el botón vos.
+   */
+  const hacer = parametros.get("hacer");
+  useEffect(() => {
+    if (!caja) return;
+    if (hacer === "gasto") setMovimientoAbierto("EGRESO");
+    else if (hacer === "ingreso") setMovimientoAbierto("INGRESO");
+    else if (hacer === "cierre") setArqueoAbierto(true);
+  }, [hacer, caja]);
 
   const movimientos = useLiveQuery(
     async () =>

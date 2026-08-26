@@ -238,7 +238,6 @@ export type Database = {
       actualizar_precios_masivo: { Args: { payload: unknown }; Returns: unknown };
       deshacer_lote_precios: { Args: { p_lote_id: string }; Returns: number };
       importar_catalogo_base: { Args: { payload: unknown }; Returns: number };
-      convertir_pedido_en_venta: { Args: { p_pedido_id: string }; Returns: unknown };
       crear_pedido_vidriera: { Args: { payload: unknown }; Returns: unknown };
       resumen_dia: { Args: { p_fecha: string }; Returns: unknown };
       ventas_por_hora: { Args: { p_desde: string; p_hasta: string }; Returns: unknown };
@@ -248,6 +247,25 @@ export type Database = {
       mas_vendidos: {
         Args: { p_comercio: string; p_dias?: number; p_limite?: number };
         Returns: Array<{ producto_id: string; unidades: number }>;
+      };
+      /** La atiende el mostrador, no solo el dueño. Ver migración 002. */
+      cambiar_estado_pedido: {
+        Args: { p_pedido_id: string; p_estado: string };
+        Returns: { id: string; estado: string; sin_cambios?: boolean };
+      };
+      convertir_pedido_en_venta: {
+        Args: { p_pedido_id: string };
+        Returns: { venta_id: string; numero?: number; duplicada?: boolean };
+      };
+      guardar_producto: {
+        Args: { payload: Record<string, unknown> };
+        Returns: { id: string; alta: boolean };
+      };
+      archivar_producto: { Args: { p_id: string }; Returns: null };
+      guardar_categoria: { Args: { payload: Record<string, unknown> }; Returns: { id: string } };
+      archivar_categoria: {
+        Args: { p_id: string };
+        Returns: { id: string; productos_sueltos: number };
       };
     };
     Enums: {

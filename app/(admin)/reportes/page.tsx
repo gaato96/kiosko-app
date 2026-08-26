@@ -4,14 +4,11 @@ import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
-  Boxes,
   Clock,
   ExternalLink,
   Package,
   Receipt,
-  ScanBarcode,
   Store,
-  Tags,
   TrendingUp,
   Users,
   Wallet,
@@ -28,7 +25,8 @@ import {
 import { contextoAdmin } from "@/lib/admin";
 import { formatearPesos } from "@/lib/money";
 import { urlVidriera } from "@/lib/url";
-import { fechaLarga, fechaLocal, nombreDia } from "@/lib/utils";
+import type { PedidoConItems } from "@/lib/tipos";
+import { cn, fechaLarga, fechaLocal, nombreDia } from "@/lib/utils";
 import { PedidosVivos } from "./pedidos-vivos";
 import { HeatmapHoras } from "./heatmap";
 
@@ -58,8 +56,14 @@ export default async function Reportes() {
   const { data: resumenBruto, error } = await supabase.rpc("resumen_dia", { p_fecha: hoy });
   const resumen = resumenBruto as Resumen | null;
 
-  const [{ data: horas }, { data: aReponer }, { data: deudores }, { data: comercio }, { data: pedidos }] =
-    await Promise.all([
+  const [
+    { data: horas },
+    { data: aReponer },
+    { data: deudores },
+    { data: comercio },
+    { data: pedidos },
+    { data: zonas },
+  ] = await Promise.all([
     supabase.rpc("ventas_por_hora", {
       p_desde: fechaLocal(new Date(Date.now() - 27 * 86400000)),
       p_hasta: hoy,
@@ -76,10 +80,11 @@ export default async function Reportes() {
     // único del panel que tiene a alguien esperando del otro lado.
     supabase
       .from("pedidos_vidriera")
-      .select("*")
+      .select("*, items:pedidos_items(*)")
       .in("estado", ["NUEVO", "ACEPTADO", "PREPARANDO"])
       .order("creado_en", { ascending: false })
       .limit(20),
+    supabase.from("zonas_envio").select("*").eq("activo", true),
   ]);
 
   if (error || !resumen) {
@@ -107,34 +112,50 @@ export default async function Reportes() {
         titulo="Hoy"
         bajada={`${nombreDia()} ${fechaLarga()}`}
         acciones={
-          <>
-            <Pildora tono={totalHoy > 0 ? "plata" : "neutral"}>
-              {resumen.hoy.tickets} {resumen.hoy.tickets === 1 ? "ticket" : "tickets"}
-            </Pildora>
-            <Link
-              href="/pos"
-              className="presion flex min-h-12 items-center gap-2 rounded-[var(--radio)] bg-[linear-gradient(180deg,var(--plata-viva),var(--plata))] px-5 font-bold text-plata-fg shadow-[var(--sombra-2)] hover:brightness-110"
-            >
-              <Zap size={17} aria-hidden />
-              Ir a cobrar
-            </Link>
-          </>
+          <Pildora tono={totalHoy > 0 ? "plata" : "neutral"}>
+            {resumen.hoy.tickets} {resumen.hoy.tickets === 1 ? "ticket" : "tickets"}
+          </Pildora>
         }
       />
 
       {/* Pedidos de la Vidriera. Primero de todo y con su propio color: hay
           alguien del otro lado esperando que le confirmen. */}
-      <PedidosVivos iniciales={pedidos ?? []} comercioId={comercioId} />
+      <PedidosVivos
+        iniciales={(pedidos ?? []) as unknown as PedidoConItems[]}
+        comercioId={comercioId}
+        zonas={zonas ?? []}
+      />
 
-      {/* Accesos directos. El dueño entra al panel cincuenta veces por día y
-          casi siempre va al mismo puñado de lugares. */}
-      <nav aria-label="Accesos rápidos" className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        <Atajo href="/pos" icono={Zap} texto="Cobrar" destacado />
-        <Atajo href="/productos" icono={ScanBarcode} texto="Productos" />
-        <Atajo href="/stock" icono={Boxes} texto="Stock" />
-        <Atajo href="/precios" icono={Tags} texto="Precios" />
-        <Atajo href="/clientes" icono={Users} texto="Fiados" />
-        <Atajo href="/caja" icono={Wallet} texto="Caja" />
+      {/* Accesos directos.
+          
+          La primera versión de esto repetía la barra lateral: seis botones que
+          llevaban exactamente a donde ya llevaba el menú de al lado. Un atajo
+          que duplica la navegación no ahorra nada.
+          
+          Estos tres no están en el menú porque no son secciones, son ACCIONES,
+          y las tres viven del otro lado, en el mostrador: cobrar, anotar lo que
+          salió de la caja y cerrarla. El link cae directo con la hoja abierta,
+          no en la pantalla de caja para que después busques el botón. */}
+      <nav aria-label="Acciones del mostrador" className="grid gap-3 sm:grid-cols-3">
+        <Atajo
+          href="/pos"
+          icono={Zap}
+          texto="Cobrar"
+          detalle="Abrir el punto de venta"
+          destacado
+        />
+        <Atajo
+          href="/caja?hacer=gasto"
+          icono={ArrowUpRight}
+          texto="Anotar un gasto"
+          detalle="Proveedor, flete, retiro"
+        />
+        <Atajo
+          href="/caja?hacer=cierre"
+          icono={Wallet}
+          texto="Cerrar la caja"
+          detalle="Arqueo del turno"
+        />
       </nav>
 
       {/* El link público, a la vista. Antes había que adivinar que existía. */}
@@ -324,36 +345,53 @@ function EnlaceVerTodo({ href }: { href: string }) {
   return (
     <Link
       href={href}
-      className="text-sm font-semibold text-brand hover:underline hover:underline-offset-4"
+      className="presion -mr-2 flex min-h-11 items-center rounded-[var(--radio)] px-2 text-sm font-semibold text-brand hover:bg-surface-alt"
     >
       Ver todo
     </Link>
   );
 }
 
-/** Botón grande de acceso directo. El destacado es cobrar: es lo urgente. */
+/**
+ * Botón de acción. El destacado es cobrar, que es lo urgente y lo que más se
+ * toca. El icono va al costado y no arriba: con el texto al lado la fila entra
+ * completa en un celular sin que el botón crezca en alto.
+ */
 function Atajo({
   href,
   icono: Icono,
   texto,
+  detalle,
   destacado,
 }: {
   href: string;
   icono: LucideIcon;
   texto: string;
+  detalle: string;
   destacado?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={
+      className={cn(
+        "presion flex min-h-16 items-center gap-3 rounded-[var(--radio-lg)] px-4 py-3",
         destacado
-          ? "presion flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-[var(--radio-lg)] bg-tinta text-brand-fg shadow-[var(--sombra-2)] hover:bg-brand-suave"
-          : "presion flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-[var(--radio-lg)] border border-border bg-surface text-text shadow-[var(--sombra-1)] hover:border-border-fuerte hover:bg-surface-alt"
-      }
+          ? "bg-[linear-gradient(180deg,var(--plata-viva),var(--plata))] text-plata-fg shadow-[var(--sombra-2)] hover:brightness-110"
+          : "border border-border bg-surface text-text shadow-[var(--sombra-1)] hover:border-border-fuerte hover:bg-surface-alt",
+      )}
     >
-      <Icono size={22} aria-hidden />
-      <span className="text-sm font-semibold">{texto}</span>
+      <Icono size={22} className="shrink-0" aria-hidden />
+      <span className="min-w-0">
+        <span className="block font-semibold leading-tight">{texto}</span>
+        <span
+          className={cn(
+            "block text-sm leading-tight",
+            destacado ? "text-plata-fg/75" : "text-text-muted",
+          )}
+        >
+          {detalle}
+        </span>
+      </span>
     </Link>
   );
 }

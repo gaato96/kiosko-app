@@ -34,6 +34,13 @@ export function ArranquePos({
   const definirCuenta = usarSesion((s) => s.definirCuenta);
   const definirDispositivo = usarSesion((s) => s.definirDispositivo);
 
+  // Primero se rehidrata el store desde localStorage (el operador del turno,
+  // el dispositivo, la caja abierta) y recién después se pisa la cuenta con lo
+  // que dice el servidor. Ver `skipHydration` en lib/store/sesion.ts.
+  useEffect(() => {
+    void usarSesion.persist.rehydrate();
+  }, []);
+
   useEffect(() => {
     definirCuenta({ comercioId, comercioNombre, rolCuenta: rol, usuarioId });
   }, [comercioId, comercioNombre, rol, usuarioId, definirCuenta]);

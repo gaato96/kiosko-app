@@ -57,8 +57,11 @@ const variantes = cva(
         grande: "min-h-16 px-6 text-lg tracking-tight",
         /** 72 px: numpad. */
         numpad: "min-h-18 min-w-18 text-2xl",
-        /** Fuera del POS (admin), donde no se cobra con una mano. */
-        chico: "min-h-10 px-3.5 text-sm",
+        /**
+         * Fuera del POS (admin), donde no se cobra con una mano. 44 px es el
+         * piso táctil: más chico que eso en un celular se falla el toque.
+         */
+        chico: "min-h-11 px-3.5 text-sm",
         /** Cuadrado, solo icono, en barras. */
         icono: "min-h-12 min-w-12 px-0",
         /** Cuadrado táctil, solo icono, en el POS. */

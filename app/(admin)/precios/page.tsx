@@ -16,7 +16,7 @@ export default async function Precios() {
 
   const [{ data: categorias }, { data: proveedores }, { data: config }, { data: lotes }] =
     await Promise.all([
-      supabase.from("categorias").select("id, nombre").order("orden"),
+      supabase.from("categorias").select("id, nombre").eq("activo", true).order("orden"),
       supabase.from("proveedores").select("id, nombre").eq("activo", true).order("nombre"),
       supabase.from("config_comercio").select("redondeo_centavos, margen_objetivo_pct").maybeSingle(),
       supabase

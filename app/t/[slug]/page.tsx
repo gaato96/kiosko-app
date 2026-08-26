@@ -52,7 +52,7 @@ export default async function PaginaVidriera({ params }: Props) {
   const [{ data: productos }, { data: categorias }, { data: zonas }, { data: config }, { data: ranking }] =
     await Promise.all([
       sb.from("vidriera_productos").select("*").eq("comercio_id", comercio.id).limit(1000),
-      sb.from("categorias").select("id, nombre, emoji, color, orden").eq("comercio_id", comercio.id).order("orden"),
+      sb.from("categorias").select("id, nombre, emoji, color, orden").eq("comercio_id", comercio.id).eq("activo", true).order("orden"),
       sb
         .from("zonas_envio")
         .select("id, nombre, costo_centavos, monto_minimo_centavos")

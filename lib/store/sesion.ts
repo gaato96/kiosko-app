@@ -80,6 +80,19 @@ export const usarSesion = create<EstadoSesion>()(
     {
       name: "kiosko:sesion",
       storage: createJSONStorage(() => localStorage),
+      /**
+       * La rehidratación NO es automática, y es a propósito.
+       *
+       * Por defecto zustand lee localStorage mientras se evalúa el módulo. En
+       * el servidor no hay localStorage, así que el HTML sale con el operador
+       * y el comercio en null; en el navegador el store ya viene lleno para el
+       * primer render. React compara los dos y tira el error de hidratación
+       * que se veía en la consola del POS.
+       *
+       * Con `skipHydration` los dos primeros renders dicen lo mismo y el store
+       * se llena un tick después, desde <ArranquePos>.
+       */
+      skipHydration: true,
     },
   ),
 );

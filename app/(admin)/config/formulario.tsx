@@ -122,7 +122,7 @@ export function FormularioConfig({
       <div className="flex flex-col gap-4 tarjeta p-5">
         <h2 className="font-semibold">Vidriera</h2>
 
-        <label className="flex items-center gap-3">
+        <label className="presion flex min-h-12 cursor-pointer items-center gap-3 py-1">
           <input
             type="checkbox"
             checked={vidrieraActiva}
@@ -145,7 +145,7 @@ export function FormularioConfig({
           />
         </Campo>
 
-        <label className="flex items-center gap-3">
+        <label className="presion flex min-h-12 cursor-pointer items-center gap-3 py-1">
           <input
             type="checkbox"
             checked={mostrarSinStock}

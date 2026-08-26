@@ -7,112 +7,32 @@
  * son números de algo que ya pasó. Por eso va primero, ocupa ancho completo y
  * es lo único que hace ruido.
  *
- * Un pedido que entra mientras el dueño mira el panel tiene que avisar solo.
- * Si hay que refrescar para enterarse, el canal no sirve: el cliente ya se fue
- * a pedir por otro lado.
+ * Acá se despacha, no se mira. El pedido se confirma, se prepara y se marca
+ * entregado desde esta misma lista: hasta ahora había que irse a otra pantalla
+ * y el panel quedaba mintiendo con "1 en curso" el resto del día.
  */
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Bell, BellOff, Bike, Store } from "lucide-react";
-import { Pildora } from "@/components/ui/pildora";
-import { formatearPesos } from "@/lib/money";
-import { supabaseBrowser } from "@/lib/supabase/browser";
-import type { PedidoVidriera } from "@/lib/tipos";
-import { cn, horaCorta } from "@/lib/utils";
-
-const ABIERTOS = ["NUEVO", "ACEPTADO", "PREPARANDO"];
+import { Bell, BellOff, Store } from "lucide-react";
+import { TarjetaPedido } from "@/components/pedidos/tarjeta-pedido";
+import { usePedidos } from "@/components/pedidos/use-pedidos";
+import type { PedidoConItems, ZonaEnvio } from "@/lib/tipos";
+import { cn } from "@/lib/utils";
 
 export function PedidosVivos({
   iniciales,
   comercioId,
+  zonas,
 }: {
-  iniciales: PedidoVidriera[];
+  iniciales: PedidoConItems[];
   comercioId: string;
+  zonas: ZonaEnvio[];
 }) {
-  const [pedidos, setPedidos] = useState<PedidoVidriera[]>(iniciales);
-  const [avisar, setAvisar] = useState(true);
-  const [recienLlegado, setRecienLlegado] = useState<string | null>(null);
-  const audioRef = useRef<AudioContext | null>(null);
-
-  /**
-   * Un bip corto generado en el momento. No se usa un archivo de audio para no
-   * sumar una descarga más a una app que tiene que arrancar rápido en una
-   * tablet vieja.
-   */
-  const sonar = useCallback(() => {
-    if (!avisar) return;
-    try {
-      audioRef.current ??= new AudioContext();
-      const ctx = audioRef.current;
-      if (ctx.state === "suspended") void ctx.resume();
-
-      const osc = ctx.createOscillator();
-      const vol = ctx.createGain();
-      osc.connect(vol);
-      vol.connect(ctx.destination);
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.12);
-      vol.gain.setValueAtTime(0.0001, ctx.currentTime);
-      vol.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
-      vol.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.42);
-    } catch {
-      // Sin audio disponible el aviso visual sigue estando. No es motivo para romper.
-    }
-  }, [avisar]);
-
-  useEffect(() => {
-    const supabase = supabaseBrowser();
-
-    const canal = supabase
-      .channel(`pedidos-panel-${comercioId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "pedidos_vidriera",
-          filter: `comercio_id=eq.${comercioId}`,
-        },
-        (payload) => {
-          const nuevo = payload.new as PedidoVidriera | undefined;
-          const viejo = payload.old as { id?: string } | undefined;
-
-          setPedidos((antes) => {
-            if (payload.eventType === "DELETE") {
-              return antes.filter((p) => p.id !== viejo?.id);
-            }
-            if (!nuevo) return antes;
-
-            // Un pedido que salió de los estados abiertos ya no va acá.
-            if (!ABIERTOS.includes(nuevo.estado)) {
-              return antes.filter((p) => p.id !== nuevo.id);
-            }
-
-            const i = antes.findIndex((p) => p.id === nuevo.id);
-            if (i === -1) return [nuevo, ...antes];
-            const copia = [...antes];
-            copia[i] = nuevo;
-            return copia;
-          });
-
-          if (payload.eventType === "INSERT" && nuevo) {
-            sonar();
-            setRecienLlegado(nuevo.id);
-            setTimeout(() => setRecienLlegado(null), 6000);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(canal);
-    };
-  }, [comercioId, sonar]);
+  const { pedidos, recienLlegado, aviso, limpiarAviso, conSonido, setConSonido, correrPaso } =
+    usePedidos({ comercioId, iniciales, soloAbiertos: true, limite: 20, avisar: true });
 
   const nuevos = pedidos.filter((p) => p.estado === "NUEVO").length;
+  const nombreZona = (id: string | null) => zonas.find((z) => z.id === id)?.nombre ?? null;
 
   if (pedidos.length === 0) {
     return (
@@ -121,7 +41,7 @@ export function PedidosVivos({
           <Store size={17} className="shrink-0 text-text-sutil" aria-hidden />
           No hay pedidos pendientes de la Vidriera.
         </p>
-        <BotonAviso avisar={avisar} onCambiar={setAvisar} />
+        <BotonAviso conSonido={conSonido} onCambiar={setConSonido} />
       </section>
     );
   }
@@ -134,30 +54,28 @@ export function PedidosVivos({
         nuevos > 0 ? "border-plata/45" : "border-border",
       )}
     >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div className="flex items-center gap-2.5">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2.5">
           <span
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-[var(--radio-sm)]",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radio-sm)]",
               nuevos > 0 ? "bg-plata-tenue text-plata" : "bg-surface-alt text-text-muted",
             )}
           >
             <Bell size={18} aria-hidden />
           </span>
-          <div>
+          <div className="min-w-0">
             <h2 className="font-display text-base font-semibold leading-tight">
               Pedidos para preparar
             </h2>
             <p className="text-sm text-text-muted">
-              {nuevos > 0
-                ? `${nuevos} sin confirmar todavía`
-                : `${pedidos.length} en curso`}
+              {nuevos > 0 ? `${nuevos} sin confirmar todavía` : `${pedidos.length} en curso`}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <BotonAviso avisar={avisar} onCambiar={setAvisar} />
+          <BotonAviso conSonido={conSonido} onCambiar={setConSonido} />
           <Link
             href="/vidriera"
             className="presion flex min-h-11 items-center rounded-[var(--radio)] border border-border bg-surface px-4 text-sm font-semibold hover:border-border-fuerte"
@@ -167,64 +85,51 @@ export function PedidosVivos({
         </div>
       </header>
 
-      <ul className="divide-y divide-border">
-        {pedidos.slice(0, 6).map((p) => (
-          <li
-            key={p.id}
-            className={cn(
-              "flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 transition-colors",
-              recienLlegado === p.id && "bg-plata-tenue",
-            )}
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="num shrink-0 text-sm font-bold text-text-sutil">
-                #{p.numero ?? "—"}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate font-semibold">{p.nombre_cliente}</p>
-                <p className="flex items-center gap-1.5 text-sm text-text-muted">
-                  {p.tipo_entrega === "ENVIO" ? (
-                    <Bike size={14} className="shrink-0" aria-hidden />
-                  ) : (
-                    <Store size={14} className="shrink-0" aria-hidden />
-                  )}
-                  {p.tipo_entrega === "ENVIO" ? "Envío" : "Retira en el local"}
-                  <span aria-hidden>·</span>
-                  {horaCorta(p.creado_en)}
-                </p>
-              </div>
-            </div>
+      {aviso ? (
+        <button
+          type="button"
+          onClick={limpiarAviso}
+          className="block w-full border-b border-border bg-surface-alt/60 px-4 py-2.5 text-left text-sm sm:px-5"
+        >
+          {aviso}
+        </button>
+      ) : null}
 
-            <div className="flex shrink-0 items-center gap-3">
-              <Pildora tono={p.estado === "NUEVO" ? "plata" : "neutral"}>
-                {p.estado === "NUEVO" ? "Sin confirmar" : p.estado.toLowerCase()}
-              </Pildora>
-              <span className="num text-lg font-bold">{formatearPesos(p.total_centavos)}</span>
-            </div>
-          </li>
+      <div className="flex flex-col gap-3 p-3 sm:p-4">
+        {pedidos.map((p) => (
+          <TarjetaPedido
+            key={p.id}
+            pedido={p}
+            zona={nombreZona(p.zona_id)}
+            onPaso={correrPaso}
+            recienLlegado={recienLlegado === p.id}
+            // Plegada de arranque salvo que esté sin confirmar: lo urgente se
+            // abre solo, lo que ya está en curso no ocupa media pantalla.
+            compacta={p.estado !== "NUEVO"}
+          />
         ))}
-      </ul>
+      </div>
     </section>
   );
 }
 
 function BotonAviso({
-  avisar,
+  conSonido,
   onCambiar,
 }: {
-  avisar: boolean;
+  conSonido: boolean;
   onCambiar: (v: boolean) => void;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onCambiar(!avisar)}
-      aria-pressed={avisar}
-      title={avisar ? "Sonar cuando entra un pedido" : "Avisos en silencio"}
+      onClick={() => onCambiar(!conSonido)}
+      aria-pressed={conSonido}
+      title={conSonido ? "Sonar cuando entra un pedido" : "Avisos en silencio"}
       className="presion flex min-h-11 items-center gap-2 rounded-[var(--radio)] px-3 text-sm font-semibold text-text-muted hover:bg-surface-alt hover:text-text"
     >
-      {avisar ? <Bell size={16} aria-hidden /> : <BellOff size={16} aria-hidden />}
-      <span className="hidden sm:inline">{avisar ? "Con sonido" : "Silenciado"}</span>
+      {conSonido ? <Bell size={16} aria-hidden /> : <BellOff size={16} aria-hidden />}
+      <span className="hidden sm:inline">{conSonido ? "Con sonido" : "Silenciado"}</span>
     </button>
   );
 }

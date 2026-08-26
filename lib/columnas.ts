@@ -13,7 +13,7 @@
  */
 
 export const COLUMNAS_PRODUCTO =
-  "id, comercio_id, categoria_id, proveedor_id, nombre, nombre_norm, alias, descripcion, codigo_barras, tipo_producto, tipo_venta, precio_venta_centavos, precio_por_kg_centavos, controla_stock, stock_actual, stock_minimo, factor_compra, unidad_compra, vence, fecha_vencimiento, visible_en_vidriera, color, emoji, imagen_url, activo, creado_en, actualizado_en" as const;
+  "id, comercio_id, categoria_id, proveedor_id, nombre, nombre_norm, alias, descripcion, codigo_barras, tipo_producto, tipo_venta, precio_venta_centavos, precio_por_kg_centavos, precio_oferta_centavos, oferta_hasta, controla_stock, stock_actual, stock_minimo, factor_compra, unidad_compra, vence, fecha_vencimiento, visible_en_vidriera, color, emoji, imagen_url, activo, creado_en, actualizado_en" as const;
 
 export const COLUMNAS_VENTA =
   "id, comercio_id, numero, usuario_id, dispositivo_id, caja_sesion_id, cliente_id, subtotal_centavos, descuento_centavos, total_centavos, estado, origen, anulada_por, anulada_en, motivo_anulacion, creado_en, sincronizado_en" as const;

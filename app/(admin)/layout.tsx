@@ -7,11 +7,13 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { NavAdmin } from "./nav";
 
 /**
- * Layout del admin. Solo el dueño.
+ * Layout del admin.
  *
- * El middleware ya devuelve 403 antes de llegar acá; esta segunda verificación
- * es a propósito: la primera es UX, esta es la que corre del lado del servidor
- * si alguien entra por otro camino. La tercera, la que manda, es RLS.
+ * Casi todo es del dueño y el middleware ya devuelve 403 antes de llegar acá,
+ * ruta por ruta. La excepción es la bandeja de pedidos, que la atiende quien
+ * esté en el mostrador: por eso acá se deja pasar al empleado y el corte fino
+ * lo hace cada pantalla con `contextoAdmin({ roles })`. La verificación que
+ * manda, siempre, es RLS.
  */
 export default async function LayoutAdmin({ children }: { children: React.ReactNode }) {
   const supabase = await supabaseServer();
@@ -21,7 +23,7 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
 
   const tenant = tenantDeClaims(data.claims);
   if (!tenant.comercioId) redirect("/onboarding");
-  if (tenant.rol !== "dueno") redirect("/sin-permiso");
+  if (tenant.rol === "anon") redirect("/sin-permiso");
 
   const { data: comercio } = await supabase
     .from("comercios")
@@ -43,12 +45,12 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
                   {comercio?.nombre ?? "Kiosko App"}
                 </span>
                 <span className="block text-[0.6875rem] leading-tight text-text-sutil">
-                  Administración
+                  {tenant.rol === "dueno" ? "Administración" : "Mostrador"}
                 </span>
               </span>
             </div>
 
-            <NavAdmin />
+            <NavAdmin rol={tenant.rol} />
 
             <div className="hidden border-t border-border p-3 lg:block">
               <Link

@@ -124,6 +124,10 @@ export type Producto = {
   precio_venta_centavos: number | null;
   /** Solo si tipo_venta = PESO. */
   precio_por_kg_centavos: number | null;
+  /** Oferta vigente sobre el precio de lista. Ver lib/producto.ts. */
+  precio_oferta_centavos: number | null;
+  /** Sin fecha, la oferta no vence. */
+  oferta_hasta: string | null;
   /** Solo lo ve el dueño. Puede llegar como null si lo filtró la política. */
   precio_costo_centavos: number | null;
 
@@ -297,8 +301,16 @@ export type PedidoVidriera = {
   estado: EstadoPedido;
   venta_id: string | null;
   acepta_promos: boolean;
+  /** Cómo dijo que va a pagar. Se cobra al entregar: la Vidriera no cobra. */
+  medio_pago: MedioPago | null;
+  /** Solo en efectivo: con cuánto abona, para llevar el vuelto contado. */
+  paga_con_centavos: number | null;
   creado_en: string;
+  actualizado_en: string;
 }
+
+/** Un pedido con lo que pidió adentro. Sin los items no se puede preparar. */
+export type PedidoConItems = PedidoVidriera & { items: PedidoItem[] };
 
 /** Producto tal como lo ve la Vidriera pública: sin costo, sin stock exacto. */
 export type ProductoVidriera = {

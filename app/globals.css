@@ -280,6 +280,19 @@
     min-height: 4rem;
   }
 
+  /**
+   * Barra pegada al borde de abajo en un celular con muesca.
+   *
+   * El layout declara `viewportFit: cover`, así que el navegador dibuja hasta
+   * el borde físico y el indicador de inicio del iPhone queda ENCIMA de lo
+   * último que haya ahí: justo el botón de cobrar, el de confirmar el pedido y
+   * el de guardar el producto. `env()` devuelve 0 donde no hay muesca, así que
+   * no cambia nada en escritorio ni en Android sin gestos.
+   */
+  .borde-seguro {
+    padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+  }
+
   .sin-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -408,6 +421,18 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+/* Pedido nuevo: dos latidos y se queda quieto. Un parpadeo permanente en el
+   mostrador se vuelve ruido visual y a los diez minutos nadie lo ve. */
+@keyframes latido {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--plata) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--plata) 22%, transparent);
   }
 }
 

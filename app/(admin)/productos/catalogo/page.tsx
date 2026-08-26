@@ -2,7 +2,7 @@ import { contextoAdmin } from "@/lib/admin";
 import { ImportadorCatalogo } from "./importador";
 import type { CatalogoBase } from "@/lib/supabase/types";
 
-export const metadata = { title: "Catálogo argentino" };
+export const metadata = { title: "Arranque rápido" };
 export const dynamic = "force-dynamic";
 
 /**
@@ -24,10 +24,12 @@ export default async function CatalogoSemilla() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-bold">Catálogo argentino</h1>
-        <p className="text-text-muted">
-          Tildá lo que vendés y ponele el precio. Lo que no tildes no se carga, y siempre podés
-          volver a esta pantalla.
+        <h1 className="font-display text-2xl font-bold">Arranque rápido</h1>
+        <p className="max-w-2xl text-text-muted">
+          Son {catalogo?.length ?? 0} productos comunes de kiosco para no cargar todo a mano el
+          primer día. No es el listado de todo lo que se vende en Argentina, ni pretende serlo:
+          lo tuyo de verdad lo cargás vos en Productos, con tu precio y tu costo. Tildá lo que
+          vendas y ponele precio.
         </p>
       </header>
 

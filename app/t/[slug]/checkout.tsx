@@ -338,7 +338,7 @@ export function Checkout({
         ) : null}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 p-3 backdrop-blur-lg">
+      <div className="borde-seguro fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-3 pt-3 backdrop-blur-lg">
         <div className="mx-auto max-w-2xl">
           <button
             onClick={confirmar}

@@ -63,6 +63,8 @@ export function AltaExpress({
       tipo_venta: tipoVenta,
       precio_venta_centavos: tipoVenta === "UNIDAD" ? centavos : null,
       precio_por_kg_centavos: tipoVenta === "PESO" ? centavos : null,
+      precio_oferta_centavos: null,
+      oferta_hasta: null,
       precio_costo_centavos: null,
       // Un producto creado al vuelo no controla stock: nadie hizo el conteo.
       // El dueño lo activa después desde el admin, cuando tenga el dato real.

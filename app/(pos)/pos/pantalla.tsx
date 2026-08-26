@@ -19,12 +19,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
+  BadgePercent,
   Check,
   LayoutGrid,
   Receipt,
   Search,
   ShoppingBasket,
   Store,
+  TrendingUp,
   UserRound,
   Wallet,
   Zap,
@@ -47,6 +49,8 @@ import { Ilustracion } from "@/components/ui/ilustracion";
 import { db } from "@/lib/db/schema";
 import { formatearPesos } from "@/lib/money";
 import { buscarProductos, productosDeTeclasRapidas, type ResultadoBusqueda } from "@/lib/pos/buscar";
+import { masVendidos, ofertasVigentes, refrescarRankingVendidos } from "@/lib/pos/destacados";
+import { precioVigente } from "@/lib/producto";
 import { abrirCaja, cajaAbierta } from "@/lib/pos/caja";
 import { registrarCobro } from "@/lib/pos/clientes";
 import { cerrarVenta } from "@/lib/pos/venta";
@@ -83,7 +87,14 @@ export function PantallaPos() {
 
   const buscadorRef = useRef<HTMLInputElement>(null);
 
-  const categorias = useLiveQuery(() => db().categorias.orderBy("orden").toArray(), [], []);
+  // Solo las vivas: la sincronización trae la categoría archivada con
+  // `activo: false` en vez de borrar la fila, así que hay que filtrarla acá o
+  // el rail sigue mostrando un rubro que ya no existe.
+  const categorias = useLiveQuery(
+    () => db().categorias.orderBy("orden").filter((c) => c.activo).toArray(),
+    [],
+    [],
+  );
   const config = useLiveQuery(() => db().config.toArray(), [], []);
   const redondeo = config?.[0]?.redondeo_centavos ?? 1;
 
@@ -100,9 +111,43 @@ export function PantallaPos() {
   const catalogoLocal = useLiveQuery(() => db().productos.count(), [], 0);
 
   const [teclas, setTeclas] = useState<Producto[]>([]);
+  const [vendidos, setVendidos] = useState<Producto[]>([]);
+  const [ofertas, setOfertas] = useState<Producto[]>([]);
+  const [solapa, setSolapa] = useState<"teclas" | "vendidos" | "ofertas">("teclas");
   useEffect(() => {
     void productosDeTeclasRapidas().then(setTeclas);
+    // Salen de Dexie, no de la red: la pantalla de cobro no espera a nadie.
+    void masVendidos().then(setVendidos);
+    void ofertasVigentes().then(setOfertas);
   }, [catalogoLocal]);
+
+  // El ranking del servidor —el único que ve las ventas de los otros
+  // mostradores— se baja SIN esperarlo y queda cacheado para la próxima vez.
+  useEffect(() => {
+    if (!sesion.comercioId) return;
+    void refrescarRankingVendidos(sesion.comercioId).then(() =>
+      masVendidos().then(setVendidos),
+    );
+  }, [sesion.comercioId]);
+
+  /**
+   * Las solapas de la tira de arriba, sin las vacías. Mostrar "Ofertas" en un
+   * kiosco que no tiene ninguna es un botón que no hace nada.
+   */
+  const destacados = useMemo(
+    () =>
+      [
+        { clave: "teclas" as const, texto: "Teclas rápidas", icono: Zap, tinte: "text-warning", items: teclas },
+        { clave: "vendidos" as const, texto: "Los que más vendés", icono: TrendingUp, tinte: "text-plata", items: vendidos },
+        { clave: "ofertas" as const, texto: "En oferta", icono: BadgePercent, tinte: "text-plata", items: ofertas },
+      ].filter((d) => d.items.length > 0),
+    [teclas, vendidos, ofertas],
+  );
+
+  // Si la solapa elegida se quedó sin nada, se cae a la primera que tenga algo.
+  const solapaViva = destacados.some((d) => d.clave === solapa)
+    ? solapa
+    : (destacados[0]?.clave ?? "teclas");
 
   // Búsqueda local. Sin debounce a propósito: corre sobre un índice en memoria
   // y tiene que sentirse instantánea mientras se escribe.
@@ -146,13 +191,17 @@ export function PantallaPos() {
         return;
       }
 
+      // El precio VIGENTE: si el producto está en oferta se cobra la oferta.
+      // Un precio promocionado que solo vale en la Vidriera es una discusión
+      // con el cliente parado en el mostrador.
+      const precio = precioVigente(p);
       ticket.agregar({
         productoId: p.id,
         descripcion: p.nombre,
         tipoVenta: "UNIDAD",
         cantidad: 1,
-        precioUnitarioCentavos: p.precio_venta_centavos ?? 0,
-        totalCentavos: p.precio_venta_centavos ?? 0,
+        precioUnitarioCentavos: precio,
+        totalCentavos: precio,
         // Se marca, no se bloquea: un stock negativo es información real.
         sinStock: p.controla_stock && p.stock_actual <= 0,
       });
@@ -407,24 +456,57 @@ export function PantallaPos() {
           </div>
         </header>
 
-        {teclas.length > 0 && consulta === "" ? (
+        {/* La tira de arriba: lo que se cobra sin buscar.
+        
+            Antes eran solo las teclas rápidas, que alguien configura una vez y
+            después nadie vuelve a tocar. Ahora convive con lo que MÁS SE VENDE
+            —calculado de las ventas de verdad, no de una lista a mano— y con
+            las ofertas vigentes, para que el que cobra sepa que ese producto
+            está promocionado antes de que se lo diga el cliente.
+            
+            Las solapas se dibujan solo si hay más de una con contenido: un
+            kiosco recién instalado no tiene ventas ni ofertas todavía. */}
+        {destacados.length > 0 && consulta === "" ? (
           <div className="border-b border-border px-3 pb-3 pt-3">
-            <p className="rotulo mb-2.5 flex items-center gap-1.5">
-              <Zap size={12} className="text-warning" aria-hidden /> Teclas rápidas
-              <span className="ml-1 hidden font-normal normal-case tracking-normal text-text-sutil sm:inline">
-                F1 a F12
-              </span>
-            </p>
-            <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(6rem,1fr))] sm:gap-2.5 sm:[grid-template-columns:repeat(auto-fill,minmax(7.25rem,1fr))]">
-              {teclas.slice(0, 12).map((p) => (
-                <ProductoCard
-                  key={p.id}
-                  producto={p}
-                  color={p.categoria_id ? porCategoria.get(p.categoria_id)?.color : null}
-                  categoriaNombre={p.categoria_id ? porCategoria.get(p.categoria_id)?.nombre : null}
-                  onElegir={agregarProducto}
-                />
+            <div className="mb-2.5 flex items-center gap-1 overflow-x-auto sin-scrollbar">
+              {destacados.map(({ clave, texto, icono: Icono, tinte }) => (
+                <button
+                  key={clave}
+                  type="button"
+                  onClick={() => setSolapa(clave)}
+                  aria-pressed={solapaViva === clave}
+                  className={cn(
+                    "presion flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-bold uppercase tracking-wide",
+                    solapaViva === clave
+                      ? "bg-surface-alt text-text"
+                      : "text-text-sutil hover:text-text-muted",
+                  )}
+                >
+                  <Icono size={12} className={tinte} aria-hidden />
+                  {texto}
+                </button>
               ))}
+              {solapaViva === "teclas" ? (
+                <span className="ml-auto hidden shrink-0 pl-2 text-xs text-text-sutil sm:inline">
+                  F1 a F12
+                </span>
+              ) : null}
+            </div>
+
+            <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(6rem,1fr))] sm:gap-2.5 sm:[grid-template-columns:repeat(auto-fill,minmax(7.25rem,1fr))]">
+              {(destacados.find((d) => d.clave === solapaViva)?.items ?? [])
+                .slice(0, 12)
+                .map((p) => (
+                  <ProductoCard
+                    key={p.id}
+                    producto={p}
+                    color={p.categoria_id ? porCategoria.get(p.categoria_id)?.color : null}
+                    categoriaNombre={
+                      p.categoria_id ? porCategoria.get(p.categoria_id)?.nombre : null
+                    }
+                    onElegir={agregarProducto}
+                  />
+                ))}
             </div>
           </div>
         ) : null}
@@ -711,7 +793,7 @@ function BarraTicket({
   onAbrir: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 p-2.5 shadow-[0_-8px_24px_-12px_rgb(19_26_38/0.3)] backdrop-blur-lg lg:hidden">
+    <div className="borde-seguro fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-2.5 pt-2.5 shadow-[0_-8px_24px_-12px_rgb(19_26_38/0.3)] backdrop-blur-lg lg:hidden">
       <button
         onClick={() => {
           haptico(8);
