@@ -757,10 +757,15 @@ create policy usuarios_lectura_auth_admin on public.usuarios_comercio
 -- PIN de 4 dígitos. bcrypt, validado SIEMPRE en el servidor.
 -- No es una credencial de login: sirve para cambiar de operador dentro de un
 -- dispositivo ya autenticado y para autorizar acciones sensibles.
+--
+-- OJO con el search_path: estas cuatro funciones usan crypt()/gen_salt() de
+-- pgcrypto, y Supabase instala esa extension en el esquema `extensions`, no en
+-- `public`. Con `set search_path = public` a secas, crypt() no se resuelve y el
+-- RPC falla con 42883 -- que del lado del cliente se veia como "sin conexion".
 -- ----------------------------------------------------------------------------
 
 create or replace function public.definir_pin(p_usuario_id uuid, p_pin text)
-returns boolean language plpgsql security definer set search_path = public as $fn$
+returns boolean language plpgsql security definer set search_path = public, extensions as $fn$
 declare v_comercio uuid := public.comercio_id();
 begin
   if p_pin !~ '^[0-9]{4}$' then
@@ -785,7 +790,7 @@ begin
 end $fn$;
 
 create or replace function public.validar_pin(p_usuario_id uuid, p_pin text)
-returns boolean language plpgsql security definer set search_path = public as $fn$
+returns boolean language plpgsql security definer set search_path = public, extensions as $fn$
 declare v_hash text;
 begin
   select pin_hash into v_hash
@@ -799,7 +804,7 @@ end $fn$;
 -- Igual que la anterior pero exigiendo rol dueño: es la que usa el modal de
 -- autorización (anular, descuento, exceder límite de crédito).
 create or replace function public.validar_pin_dueno(p_usuario_id uuid, p_pin text)
-returns boolean language plpgsql security definer set search_path = public as $fn$
+returns boolean language plpgsql security definer set search_path = public, extensions as $fn$
 declare v_hash text;
 begin
   select pin_hash into v_hash
@@ -2008,7 +2013,7 @@ end $fn$;
 -- ============================================================================
 
 create or replace function public.definir_pin_admin(p_usuario_id uuid, p_pin text)
-returns boolean language plpgsql security definer set search_path = public as $fn$
+returns boolean language plpgsql security definer set search_path = public, extensions as $fn$
 begin
   if p_pin !~ '^[0-9]{4}$' then
     raise exception 'El PIN tiene que ser de 4 dígitos';

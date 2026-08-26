@@ -20,7 +20,7 @@ function Formulario() {
     setCargando(true);
     setError(null);
 
-    const { error } = await supabaseBrowser().auth.signInWithPassword({
+    const { data, error } = await supabaseBrowser().auth.signInWithPassword({
       email: mail.trim(),
       password: clave,
     });
@@ -47,7 +47,13 @@ function Formulario() {
       return;
     }
 
-    router.replace(params.get("volver") ?? "/pos");
+    // Al dueño se lo lleva al panel: entra a mirar cómo viene el día. Al
+    // empleado, directo al mostrador, que es lo único que puede hacer.
+    // El rol vive en el JWT (lo inyecta el hook de Supabase), no en la fila de
+    // auth.users, así que se lee del token y no de `data.user`.
+    const destino = params.get("volver") ?? (rolDelToken(data.session?.access_token) === "dueno" ? "/reportes" : "/pos");
+
+    router.replace(destino);
     router.refresh();
   }
 
@@ -111,4 +117,19 @@ export function FormularioLogin() {
       <Formulario />
     </Suspense>
   );
+}
+
+/** Lee `app_metadata.rol` del access token sin traer una librería para eso. */
+function rolDelToken(token?: string): string | null {
+  if (!token) return null;
+  try {
+    const carga = token.split(".")[1];
+    if (!carga) return null;
+    const json = atob(carga.replace(/-/g, "+").replace(/_/g, "/"));
+    return (JSON.parse(json)?.app_metadata?.rol as string) ?? null;
+  } catch {
+    // Un token que no se puede leer no es motivo para trabar el login: el
+    // destino por defecto (el mostrador) sirve para cualquier rol.
+    return null;
+  }
 }

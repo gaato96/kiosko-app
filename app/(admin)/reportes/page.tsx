@@ -1,14 +1,21 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  Boxes,
   Clock,
+  ExternalLink,
   Package,
   Receipt,
+  ScanBarcode,
+  Store,
+  Tags,
   TrendingUp,
   Users,
   Wallet,
+  Zap,
 } from "lucide-react";
 import { EstadoVacio } from "@/components/ui/estado-vacio";
 import { Pildora } from "@/components/ui/pildora";
@@ -20,7 +27,9 @@ import {
 } from "@/components/ui/tarjeta";
 import { contextoAdmin } from "@/lib/admin";
 import { formatearPesos } from "@/lib/money";
+import { urlVidriera } from "@/lib/url";
 import { fechaLocal, nombreDia } from "@/lib/utils";
+import { PedidosVivos } from "./pedidos-vivos";
 import { HeatmapHoras } from "./heatmap";
 
 export const metadata = { title: "Panel" };
@@ -43,13 +52,14 @@ type Resumen = {
  * Cada número viene con una acción al lado. Un número sin acción es decoración.
  */
 export default async function Reportes() {
-  const { supabase } = await contextoAdmin();
+  const { supabase, comercioId } = await contextoAdmin();
   const hoy = fechaLocal();
 
   const { data: resumenBruto, error } = await supabase.rpc("resumen_dia", { p_fecha: hoy });
   const resumen = resumenBruto as Resumen | null;
 
-  const [{ data: horas }, { data: aReponer }, { data: deudores }] = await Promise.all([
+  const [{ data: horas }, { data: aReponer }, { data: deudores }, { data: comercio }, { data: pedidos }] =
+    await Promise.all([
     supabase.rpc("ventas_por_hora", {
       p_desde: fechaLocal(new Date(Date.now() - 27 * 86400000)),
       p_hasta: hoy,
@@ -61,6 +71,15 @@ export default async function Reportes() {
       .gt("saldo_centavos", 0)
       .order("saldo_centavos", { ascending: false })
       .limit(5),
+    supabase.from("comercios").select("slug, vidriera_activa").maybeSingle(),
+    // Los pedidos que todavía no se despacharon. Van arriba de todo: son lo
+    // único del panel que tiene a alguien esperando del otro lado.
+    supabase
+      .from("pedidos_vidriera")
+      .select("*")
+      .in("estado", ["NUEVO", "ACEPTADO", "PREPARANDO"])
+      .order("creado_en", { ascending: false })
+      .limit(20),
   ]);
 
   if (error || !resumen) {
@@ -77,6 +96,9 @@ export default async function Reportes() {
   const variacion = totalSemana > 0 ? ((totalHoy - totalSemana) / totalSemana) * 100 : null;
   const gananciaHoy = totalHoy - resumen.hoy.costo;
   const totalDeuda = (deudores ?? []).reduce((a, c) => a + c.saldo_centavos, 0);
+  const linkVidriera = comercio?.slug
+    ? urlVidriera(comercio.slug, process.env.NEXT_PUBLIC_APP_URL)
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,11 +107,67 @@ export default async function Reportes() {
         titulo="Hoy"
         bajada={`${nombreDia()} ${new Date().toLocaleDateString("es-AR")}`}
         acciones={
-          <Pildora tono={totalHoy > 0 ? "plata" : "neutral"}>
-            {resumen.hoy.tickets} {resumen.hoy.tickets === 1 ? "ticket" : "tickets"}
-          </Pildora>
+          <>
+            <Pildora tono={totalHoy > 0 ? "plata" : "neutral"}>
+              {resumen.hoy.tickets} {resumen.hoy.tickets === 1 ? "ticket" : "tickets"}
+            </Pildora>
+            <Link
+              href="/pos"
+              className="presion flex min-h-12 items-center gap-2 rounded-[var(--radio)] bg-[linear-gradient(180deg,var(--plata-viva),var(--plata))] px-5 font-bold text-plata-fg shadow-[var(--sombra-2)] hover:brightness-110"
+            >
+              <Zap size={17} aria-hidden />
+              Ir a cobrar
+            </Link>
+          </>
         }
       />
+
+      {/* Pedidos de la Vidriera. Primero de todo y con su propio color: hay
+          alguien del otro lado esperando que le confirmen. */}
+      <PedidosVivos iniciales={pedidos ?? []} comercioId={comercioId} />
+
+      {/* Accesos directos. El dueño entra al panel cincuenta veces por día y
+          casi siempre va al mismo puñado de lugares. */}
+      <nav aria-label="Accesos rápidos" className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <Atajo href="/pos" icono={Zap} texto="Cobrar" destacado />
+        <Atajo href="/productos" icono={ScanBarcode} texto="Productos" />
+        <Atajo href="/stock" icono={Boxes} texto="Stock" />
+        <Atajo href="/precios" icono={Tags} texto="Precios" />
+        <Atajo href="/clientes" icono={Users} texto="Fiados" />
+        <Atajo href="/caja" icono={Wallet} texto="Caja" />
+      </nav>
+
+      {/* El link público, a la vista. Antes había que adivinar que existía. */}
+      {linkVidriera ? (
+        <Panel className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radio-sm)] bg-plata-tenue text-plata">
+              <Store size={19} aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="rotulo">Tu vidriera pública</p>
+              <p className="truncate font-mono text-sm text-text-muted">{linkVidriera}</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={linkVidriera}
+              target="_blank"
+              rel="noopener"
+              className="presion flex min-h-11 items-center gap-2 rounded-[var(--radio)] border border-border bg-surface px-4 text-sm font-semibold hover:border-border-fuerte"
+            >
+              <ExternalLink size={16} aria-hidden />
+              Ver como cliente
+            </a>
+            <Link
+              href="/vidriera"
+              className="presion flex min-h-11 items-center rounded-[var(--radio)] px-4 text-sm font-semibold text-text-muted hover:bg-surface-alt hover:text-text"
+            >
+              Administrar
+            </Link>
+          </div>
+        </Panel>
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Metrica
@@ -249,6 +327,33 @@ function EnlaceVerTodo({ href }: { href: string }) {
       className="text-sm font-semibold text-brand hover:underline hover:underline-offset-4"
     >
       Ver todo
+    </Link>
+  );
+}
+
+/** Botón grande de acceso directo. El destacado es cobrar: es lo urgente. */
+function Atajo({
+  href,
+  icono: Icono,
+  texto,
+  destacado,
+}: {
+  href: string;
+  icono: LucideIcon;
+  texto: string;
+  destacado?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={
+        destacado
+          ? "presion flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-[var(--radio-lg)] bg-tinta text-brand-fg shadow-[var(--sombra-2)] hover:bg-brand-suave"
+          : "presion flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-[var(--radio-lg)] border border-border bg-surface text-text shadow-[var(--sombra-1)] hover:border-border-fuerte hover:bg-surface-alt"
+      }
+    >
+      <Icono size={22} aria-hidden />
+      <span className="text-sm font-semibold">{texto}</span>
     </Link>
   );
 }

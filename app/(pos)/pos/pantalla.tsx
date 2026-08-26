@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Check, Receipt, Search, Store, UserRound, Wallet, Zap } from "lucide-react";
+import { Check, LayoutGrid, Receipt, Search, Store, UserRound, Wallet, Zap } from "lucide-react";
 import { EstadoSync } from "@/components/estado-sync";
 import { AltaExpress } from "@/components/pos/alta-express";
 import { AperturaCaja } from "@/components/pos/apertura-caja";
@@ -345,6 +345,16 @@ export function PantallaPos() {
           <EstadoSync className="hidden lg:inline-flex" />
 
           <div className="flex shrink-0 items-center gap-1">
+            {/* Volver al panel. Solo el dueño: el empleado no tiene admin, y
+                mostrarle un link que termina en 403 es peor que no mostrarlo. */}
+            {sesion.rolCuenta === "dueno" ? (
+              <Link href="/reportes" aria-label="Ir al panel">
+                <Boton variante="fantasma" tamano="icono">
+                  <LayoutGrid size={19} />
+                </Boton>
+              </Link>
+            ) : null}
+
             <Link href="/ventas" aria-label="Ventas del día">
               <Boton variante="fantasma" tamano="icono">
                 <Receipt size={19} />
