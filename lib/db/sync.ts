@@ -123,6 +123,31 @@ export async function pull(comercioId: string): Promise<number> {
     }
   }
 
+  // Repesca de números de venta.
+  //
+  // El número lo pone el servidor y vuelve en la respuesta de `sync_venta`.
+  // Si esa respuesta se perdió —se cortó la red justo después de escribir, o
+  // la venta se sincronizó con una versión vieja del cliente que la
+  // descartaba— la venta queda bien en la base y en el mostrador se sigue
+  // leyendo "Sin número todavía". Esto lo repara solo.
+  {
+    const huerfanas = await db()
+      .ventas.filter((v) => v.numero == null && !v.pendiente)
+      .limit(50)
+      .toArray();
+
+    if (huerfanas.length > 0) {
+      const { data: numeradas } = await sb
+        .from("ventas")
+        .select("id, numero")
+        .in("id", huerfanas.map((v) => v.id));
+
+      for (const fila of numeradas ?? []) {
+        if (fila.numero != null) await db().ventas.update(fila.id, { numero: fila.numero });
+      }
+    }
+  }
+
   // La config es una sola fila; se trae siempre.
   const { data: config, error: errorConfig } = await sb
     .from("config_comercio")
@@ -168,12 +193,19 @@ export async function push(): Promise<{ ok: number; error: number }> {
   return procesar(async (item) => {
     const rpc = RPC_POR_TIPO[item.tipo];
     if (!rpc) throw new Error(`Tipo de outbox sin RPC: ${item.tipo}`);
-    const { error } = await llamarRpc(sb, rpc, item.payload);
+    const { data, error } = await llamarRpc(sb, rpc, item.payload);
     if (error) throw new Error(`${rpc}: ${error.message}`);
 
-    // La venta confirmada deja de estar pendiente en la vista local.
     if (item.tipo === "venta") {
-      await db().ventas.update(item.id, { pendiente: false });
+      // El NÚMERO lo asigna el servidor: la venta se crea offline sin él y
+      // `sync_venta` lo devuelve al confirmarla. Antes esa respuesta se
+      // descartaba, así que el ticket quedaba en "Sin número todavía" para
+      // siempre, incluso con la venta ya sincronizada y numerada en la base.
+      const respuesta = data as { numero?: number | null } | null;
+      await db().ventas.update(item.id, {
+        pendiente: false,
+        ...(respuesta?.numero != null ? { numero: respuesta.numero } : {}),
+      });
     }
   });
 }

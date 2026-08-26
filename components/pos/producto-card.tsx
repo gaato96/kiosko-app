@@ -42,6 +42,14 @@ export function ProductoCard({
   const antes = precioAnterior(producto);
   const descuento = descuentoPct(producto);
   const sinStock = producto.controla_stock && producto.stock_actual <= 0;
+  // Aviso de que se está por acabar. Va acá y no solo en un reporte porque el
+  // momento en que sirve enterarse es cuando lo estás vendiendo: ahí es cuando
+  // el dueño se acuerda de pedirlo, no cuando abre el panel a la noche.
+  const porAcabarse =
+    producto.controla_stock &&
+    producto.stock_actual > 0 &&
+    producto.stock_minimo > 0 &&
+    producto.stock_actual <= producto.stock_minimo;
   const tinte = producto.color ?? color ?? "#56617a";
 
   return (
@@ -50,7 +58,7 @@ export function ProductoCard({
         haptico(12);
         onElegir(producto);
       }}
-      aria-label={`${producto.nombre}, ${formatearPesos(precio)}${esPeso ? " por kilo" : ""}${antes ? ", en oferta" : ""}`}
+      aria-label={`${producto.nombre}, ${formatearPesos(precio)}${esPeso ? " por kilo" : ""}${antes ? ", en oferta" : ""}${sinStock ? ", sin stock" : porAcabarse ? ", quedan pocos" : ""}`}
       style={{ ["--tinte" as string]: tinte }}
       className={cn(
         "presion group relative flex cursor-pointer flex-col gap-2 rounded-[var(--radio-lg)] p-2.5 text-left",
@@ -100,8 +108,14 @@ export function ProductoCard({
           </span>
         ) : null}
         {sinStock ? (
-          <span className="absolute inset-x-0 bottom-0 bg-warning/90 py-0.5 text-center text-[0.625rem] font-bold uppercase tracking-wide text-white">
+          <span className="absolute inset-x-0 bottom-0 bg-danger/90 py-0.5 text-center text-[0.625rem] font-bold uppercase tracking-wide text-white">
             Sin stock
+          </span>
+        ) : porAcabarse ? (
+          <span className="absolute inset-x-0 bottom-0 bg-warning/90 py-0.5 text-center text-[0.625rem] font-bold uppercase tracking-wide text-white">
+            {producto.tipo_venta === "PESO"
+              ? "Queda poco"
+              : `Quedan ${producto.stock_actual}`}
           </span>
         ) : null}
       </span>

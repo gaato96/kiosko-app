@@ -85,7 +85,7 @@ export function UltimasVentas() {
         <div className="flex-1">
           <h1 className="text-xl font-bold">Ventas de hoy</h1>
           <p className="num text-sm text-text-muted">
-            {ventas.length} tickets · {formatearPesos(total)}
+            {ventas.length} {ventas.length === 1 ? "ticket" : "tickets"} · {formatearPesos(total)}
           </p>
         </div>
       </header>

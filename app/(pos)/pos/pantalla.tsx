@@ -54,7 +54,7 @@ import { precioVigente } from "@/lib/producto";
 import { abrirCaja, cajaAbierta } from "@/lib/pos/caja";
 import { registrarCobro } from "@/lib/pos/clientes";
 import { cerrarVenta } from "@/lib/pos/venta";
-import { usarSesion } from "@/lib/store/sesion";
+import { rolEnMostrador, usarSesion } from "@/lib/store/sesion";
 import { totalDe, usarTicket, type PagoTicket } from "@/lib/store/ticket";
 import type { Cliente, Producto } from "@/lib/tipos";
 import { cn, haptico } from "@/lib/utils";
@@ -419,9 +419,11 @@ export function PantallaPos() {
           <EstadoSync className="hidden lg:inline-flex" />
 
           <div className="flex shrink-0 items-center gap-1">
-            {/* Volver al panel. Solo el dueño: el empleado no tiene admin, y
-                mostrarle un link que termina en 403 es peor que no mostrarlo. */}
-            {sesion.rolCuenta === "dueno" ? (
+            {/* Volver al panel. Solo si el que está EN EL MOSTRADOR es el
+                dueño. Antes miraba `rolCuenta`, o sea la cuenta con la que se
+                abrió la sesión, así que el empleado que entraba con PIN sobre
+                la tablet del dueño seguía viendo el botón —y entrando. */}
+            {rolEnMostrador(sesion) === "dueno" ? (
               <Link href="/reportes" aria-label="Ir al panel">
                 <Boton variante="fantasma" tamano="icono">
                   <LayoutGrid size={19} />

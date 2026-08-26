@@ -102,3 +102,24 @@ export function operadorEfectivo(): string | null {
   const s = usarSesion.getState();
   return s.operador?.id ?? s.usuarioId;
 }
+
+/**
+ * El rol de QUIEN ESTÁ PARADO EN EL MOSTRADOR, que no es lo mismo que el rol
+ * de la cuenta con la que quedó abierta la sesión del navegador.
+ *
+ * En un kiosco la tablet se abre una vez, con el usuario del dueño, y después
+ * queda prendida todo el día. Quien atiende se identifica con su PIN. Si la
+ * app mira solamente `rolCuenta`, el empleado que entró con PIN sigue teniendo
+ * a mano el panel, los costos y los márgenes.
+ *
+ * OJO, esto es un candado de interfaz, no de datos: la sesión HTTP sigue
+ * siendo la del dueño y RLS no puede ver quién apretó el PIN. Por eso volver
+ * al admin con un empleado activo pide el PIN del dueño: es lo único que
+ * vuelve a probar quién está del otro lado de la pantalla.
+ */
+export function rolEnMostrador(estado: {
+  rolCuenta: Rol | "anon";
+  operador: Operador | null;
+}): Rol | "anon" {
+  return estado.operador?.rol ?? estado.rolCuenta;
+}

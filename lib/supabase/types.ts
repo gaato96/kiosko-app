@@ -248,6 +248,20 @@ export type Database = {
         Args: { p_comercio: string; p_dias?: number; p_limite?: number };
         Returns: Array<{ producto_id: string; unidades: number }>;
       };
+      /** Quién vendió, por operador (el que entró con PIN). Migración 003. */
+      ventas_por_operador: {
+        Args: { p_desde: string; p_hasta: string };
+        Returns: Array<{
+          usuario_id: string | null;
+          nombre: string;
+          rol: string;
+          tickets: number;
+          total_centavos: number;
+          efectivo_centavos: number;
+          ticket_promedio_centavos: number;
+          anuladas: number;
+        }>;
+      };
       /** La atiende el mostrador, no solo el dueño. Ver migración 002. */
       cambiar_estado_pedido: {
         Args: { p_pedido_id: string; p_estado: string };
