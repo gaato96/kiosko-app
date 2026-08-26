@@ -14,8 +14,8 @@
 -- ============================================================================
 
 -- Credenciales de desarrollo
---   dueño:    dueno@kiosco.test    / kiosco1234   · PIN 1111
---   empleado: empleado@kiosco.test / kiosco1234   · PIN 2222
+--   dueño:    dueno@kiosko.test    / kiosko1234   · PIN 1111
+--   empleado: empleado@kiosko.test / kiosko1234   · PIN 2222
 
 do $seed$
 declare
@@ -46,11 +46,11 @@ begin
     reauthentication_token)
   values
     (v_dueno, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-     'dueno@kiosco.test', crypt('kiosco1234', gen_salt('bf')),
+     'dueno@kiosko.test', crypt('kiosko1234', gen_salt('bf')),
      now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}',
      '', '', '', '', '', '', ''),
     (v_empleado, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-     'empleado@kiosco.test', crypt('kiosco1234', gen_salt('bf')),
+     'empleado@kiosko.test', crypt('kiosko1234', gen_salt('bf')),
      now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}',
      '', '', '', '', '', '', '')
   on conflict (id) do nothing;
@@ -58,9 +58,9 @@ begin
   insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at)
   values
     (gen_random_uuid(), v_dueno, v_dueno::text,
-     jsonb_build_object('sub', v_dueno::text, 'email', 'dueno@kiosco.test'), 'email', now(), now()),
+     jsonb_build_object('sub', v_dueno::text, 'email', 'dueno@kiosko.test'), 'email', now(), now()),
     (gen_random_uuid(), v_empleado, v_empleado::text,
-     jsonb_build_object('sub', v_empleado::text, 'email', 'empleado@kiosco.test'), 'email', now(), now())
+     jsonb_build_object('sub', v_empleado::text, 'email', 'empleado@kiosko.test'), 'email', now(), now())
   on conflict do nothing;
 
   -- --------------------------------------------------------------- Comercio
@@ -195,5 +195,5 @@ begin
     (v_comercio, 'Luz', 'Edenor', 8500000, current_date - 5, true, v_dueno),
     (v_comercio, 'Sueldos', 'Gastón', 60000000, current_date - 3, true, v_dueno);
 
-  raise notice 'Seed listo. dueno@kiosco.test / kiosco1234 (PIN 1111) · empleado@kiosco.test / kiosco1234 (PIN 2222)';
+  raise notice 'Seed listo. dueno@kiosko.test / kiosko1234 (PIN 1111) · empleado@kiosko.test / kiosko1234 (PIN 2222)';
 end $seed$;

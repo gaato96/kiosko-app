@@ -56,8 +56,8 @@ Con el seed aplicado:
 
 | Usuario | Mail | Contraseña | PIN |
 |---|---|---|---|
-| Dueña | `dueno@kiosco.test` | `kiosco1234` | `1111` |
-| Empleado | `empleado@kiosco.test` | `kiosco1234` | `2222` |
+| Dueña | `dueno@kiosko.test` | `kiosko1234` | `1111` |
+| Empleado | `empleado@kiosko.test` | `kiosko1234` | `2222` |
 
 ## Comandos
 
