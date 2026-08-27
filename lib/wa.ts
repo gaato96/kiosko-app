@@ -11,20 +11,40 @@
 import { formatearPesos } from "./money";
 import { formatearPeso } from "./peso";
 
-/** Normaliza un teléfono argentino al formato que espera wa.me: 5491122334455. */
+/**
+ * Normaliza un teléfono argentino al formato que espera wa.me: 5491122334455.
+ *
+ * Un número argentino completo, sin el 0 de larga distancia y sin el 15 de
+ * móvil, son 10 dígitos: área (2 a 4) + local (6 a 8). Eso es justo lo que
+ * carga la mayoría —"3815104338"— y hay que dejarlo intacto.
+ *
+ * El "15" solo hay que sacarlo cuando alguien escribió el número tal como se
+ * DISCA en el país ("0381 15 5104338", 12+ dígitos sin el 0). Sacarlo siempre
+ * es el bug: en un número ya limpio de 10 dígitos, el "1" final del área
+ * pegado al "5" inicial del local ("...81" + "5104338...") arma un "15" que
+ * no es ningún prefijo, y borrarlo le come un dígito de verdad al número
+ * —"3815104338" quedaba en "38104338"—, cambiando a quién le llega el mensaje.
+ */
 export function normalizarTelefono(telefono: string | null | undefined): string | null {
   if (!telefono) return null;
   let n = telefono.replace(/\D/g, "");
+  if (n === "") return null;
 
   if (n.startsWith("00")) n = n.slice(2);
+
   if (n.startsWith("54")) {
     // Ya viene con país. Se asegura el 9 del móvil.
-    const resto = n.slice(2).replace(/^9/, "");
-    return `549${resto}`;
+    n = n.slice(2).replace(/^9/, "");
+  } else {
+    // Sin país: se saca el 0 de larga distancia si está.
+    n = n.replace(/^0/, "");
   }
-  // Sin país: se saca el 0 de larga distancia y el 15 del móvil.
-  n = n.replace(/^0/, "");
-  n = n.replace(/^(\d{2,4})15/, "$1");
+
+  // Recién si sobran más de 10 dígitos hay un "15" de verdad para sacar.
+  if (n.length > 10) {
+    n = n.replace(/^(\d{2,4})15/, "$1");
+  }
+
   return `549${n}`;
 }
 
