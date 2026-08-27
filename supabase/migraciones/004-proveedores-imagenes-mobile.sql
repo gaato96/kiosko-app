@@ -27,8 +27,13 @@ alter table usuarios_comercio add column if not exists avatar_url text;
 
 -- La vista que lee el POS para el cambio de operador: ahora con la foto, que
 -- es lo que hace reconocible al operador de un vistazo en una tablet.
+-- `avatar_url` va AL FINAL de la lista de columnas a propósito:
+-- CREATE OR REPLACE VIEW no permite reordenar ni renombrar columnas
+-- existentes, solo agregar nuevas al final. Ponerla en el medio corre
+-- "activo" de la 5ta posición a la 6ta y Postgres lo rechaza con
+-- "cannot change name of view column".
 create or replace view usuarios_pos with (security_invoker = off) as
-  select id, comercio_id, nombre, rol, avatar_url, activo
+  select id, comercio_id, nombre, rol, activo, avatar_url
     from usuarios_comercio
    where comercio_id = public.comercio_id() and activo;
 grant select on usuarios_pos to authenticated;
