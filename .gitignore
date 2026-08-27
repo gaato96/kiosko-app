@@ -13,3 +13,4 @@ next-env.d.ts.bak
 public/sw.js
 public/sw.js.map
 coverage
+supabase/.temp
