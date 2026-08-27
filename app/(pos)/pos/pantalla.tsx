@@ -15,7 +15,7 @@
  *   8    Listo
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
@@ -24,6 +24,7 @@ import {
   LayoutGrid,
   Receipt,
   Search,
+  ScanBarcode,
   ShoppingBasket,
   Store,
   TrendingUp,
@@ -39,6 +40,7 @@ import { AutorizacionDueno } from "@/components/pos/autorizacion-dueno";
 import { PantallaCobro } from "@/components/pos/cobro";
 import { SelectorCliente } from "@/components/pos/selector-cliente";
 import { ProductoCard } from "@/components/pos/producto-card";
+import { EscanerCodigo, hayEscaner } from "@/components/ui/escaner-codigo";
 import { SelectorOperador } from "@/components/pos/selector-operador";
 import { PanelTicket } from "@/components/pos/ticket";
 import { Boton } from "@/components/ui/boton";
@@ -48,7 +50,14 @@ import { Input } from "@/components/ui/campo";
 import { Ilustracion } from "@/components/ui/ilustracion";
 import { db } from "@/lib/db/schema";
 import { formatearPesos } from "@/lib/money";
-import { buscarProductos, productosDeTeclasRapidas, type ResultadoBusqueda } from "@/lib/pos/buscar";
+import {
+  buscarProductos,
+  porCodigoBarras,
+  productosDeTeclasRapidas,
+  suscribirIndice,
+  versionIndice,
+  type ResultadoBusqueda,
+} from "@/lib/pos/buscar";
 import { masVendidos, ofertasVigentes, refrescarRankingVendidos } from "@/lib/pos/destacados";
 import { precioVigente } from "@/lib/producto";
 import { abrirCaja, cajaAbierta } from "@/lib/pos/caja";
@@ -56,7 +65,7 @@ import { registrarCobro } from "@/lib/pos/clientes";
 import { cerrarVenta } from "@/lib/pos/venta";
 import { rolEnMostrador, usarSesion } from "@/lib/store/sesion";
 import { totalDe, usarTicket, type PagoTicket } from "@/lib/store/ticket";
-import type { Cliente, Producto } from "@/lib/tipos";
+import type { Categoria, Cliente, Producto } from "@/lib/tipos";
 import { cn, haptico } from "@/lib/utils";
 
 type Vista = "grilla" | "cobro" | "balanza";
@@ -85,7 +94,26 @@ export function PantallaPos() {
   const [ticketAbierto, setTicketAbierto] = useState(false);
   const [excesoCredito, setExcesoCredito] = useState<Cliente | null>(null);
 
+  const [escaneando, setEscaneando] = useState(false);
+  const [puedeEscanear, setPuedeEscanear] = useState(false);
+  useEffect(() => setPuedeEscanear(hayEscaner()), []);
+
   const buscadorRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Versión del índice del buscador.
+   *
+   * El índice vive en memoria y se rearma después de cada sincronización. Sin
+   * suscribirse a eso, la búsqueda quedaba congelada con el catálogo que había
+   * al abrir la pantalla: el producto recién creado en el panel no aparecía en
+   * el mostrador hasta recargar la página. Ahora cada rearmado vuelve a
+   * disparar la consulta.
+   */
+  const versionCatalogo = useSyncExternalStore(
+    suscribirIndice,
+    versionIndice,
+    () => 0,
+  );
 
   // Solo las vivas: la sincronización trae la categoría archivada con
   // `activo: false` en vez de borrar la fila, así que hay que filtrarla acá o
@@ -119,7 +147,7 @@ export function PantallaPos() {
     // Salen de Dexie, no de la red: la pantalla de cobro no espera a nadie.
     void masVendidos().then(setVendidos);
     void ofertasVigentes().then(setOfertas);
-  }, [catalogoLocal]);
+  }, [catalogoLocal, versionCatalogo]);
 
   // El ranking del servidor —el único que ve las ventas de los otros
   // mostradores— se baja SIN esperarlo y queda cacheado para la próxima vez.
@@ -159,7 +187,7 @@ export function PantallaPos() {
     return () => {
       vigente = false;
     };
-  }, [consulta, categoriaId, catalogoLocal]);
+  }, [consulta, categoriaId, catalogoLocal, versionCatalogo]);
 
   const total = totalDe(ticket.lineas, ticket.descuentoCentavos);
 
@@ -267,6 +295,24 @@ export function PantallaPos() {
     }
   }
 
+  /**
+   * Lo que se hace con un código leído por la cámara: si está en el catálogo
+   * entra al ticket directo; si no, se deja escrito en el buscador para que
+   * el alta express lo tome. Nunca se pierde la lectura.
+   */
+  const agregarPorCodigo = useCallback(
+    async (codigo: string) => {
+      const p = await porCodigoBarras(codigo);
+      if (p) {
+        agregarProducto(p);
+        return;
+      }
+      setConsulta(codigo);
+      setAviso(`No hay ningún producto con el código ${codigo}. Podés cargarlo ahora.`);
+    },
+    [agregarProducto],
+  );
+
   const sinResultados = consulta.trim() !== "" && resultados.length === 0;
 
   const abrirBalanza = useCallback(() => {
@@ -352,35 +398,37 @@ export function PantallaPos() {
 
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
-      {/* Rail de categorias: vertical y siempre visible. Una tira horizontal
-          de chips obliga a scrollear para llegar a "Limpieza", y en el
-          mostrador eso son dos gestos de mas por venta. */}
+      {/* Escritorio y tablet horizontal: el rail vertical de siempre. En
+          celular NO se muestra acá. Estaba con `order-2`, o sea al final de la
+          columna, y la barra del ticket —que es `fixed` abajo— se le ponía
+          encima: el rubro no se podía ni ver ni tocar, y por eso en el celular
+          no se podía filtrar por categoría. */}
       <nav
         aria-label="Categorías"
-        className="order-2 flex shrink-0 gap-1 overflow-x-auto border-t border-border bg-surface px-2 py-1.5 sin-scrollbar lg:order-1 lg:w-[5.5rem] lg:flex-col lg:overflow-y-auto lg:border-r lg:border-t-0 lg:px-1.5 lg:py-2"
+        className="order-1 hidden shrink-0 gap-1 border-border bg-surface lg:flex lg:w-[5.5rem] lg:flex-col lg:overflow-y-auto lg:border-r lg:px-1.5 lg:py-2"
       >
-        <BotonCategoria
-          activa={categoriaId === null}
-          nombre="Todo"
-          onClick={() => setCategoriaId(null)}
+        <BotonesCategoria
+          categorias={categorias ?? []}
+          categoriaId={categoriaId}
+          onElegir={setCategoriaId}
         />
-        {categorias?.map((c) => (
-          <BotonCategoria
-            key={c.id}
-            activa={categoriaId === c.id}
-            nombre={c.nombre}
-            color={c.color}
-            onClick={() => setCategoriaId(categoriaId === c.id ? null : c.id)}
-          />
-        ))}
       </nav>
 
-      <section className="order-1 flex min-h-0 flex-1 flex-col lg:order-2">
+      <section className="order-2 flex min-h-0 flex-1 flex-col">
         <header className="vidrio sticky top-0 z-20 flex shrink-0 items-center gap-2 border-b border-border px-3 py-2.5">
           <div className="hidden items-center gap-2.5 pr-1 xl:flex">
-            <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radio-sm)] bg-[linear-gradient(140deg,var(--brand-suave),var(--brand))] text-brand-fg shadow-[var(--sombra-1)]">
-              <Store size={17} aria-hidden />
-            </span>
+            {sesion.comercioLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element -- logo del propio comercio
+              <img
+                src={sesion.comercioLogo}
+                alt=""
+                className="h-9 w-9 shrink-0 rounded-[var(--radio-sm)] object-cover shadow-[var(--sombra-1)]"
+              />
+            ) : (
+              <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radio-sm)] bg-[linear-gradient(140deg,var(--brand-suave),var(--brand))] text-brand-fg shadow-[var(--sombra-1)]">
+                <Store size={17} aria-hidden />
+              </span>
+            )}
             <span className="min-w-0">
               <span className="block truncate font-display text-sm font-semibold leading-tight">
                 {sesion.comercioNombre ?? "Mostrador"}
@@ -415,6 +463,20 @@ export function PantallaPos() {
               /
             </kbd>
           </div>
+
+          {/* El que cobra desde el celular no tiene pistola. Con la cámara
+              escanea igual y el producto entra al ticket de un toque. */}
+          {puedeEscanear ? (
+            <Boton
+              variante="secundario"
+              tamano="icono-pos"
+              onClick={() => setEscaneando(true)}
+              aria-label="Escanear un código de barras"
+              className="shrink-0"
+            >
+              <ScanBarcode size={21} />
+            </Boton>
+          ) : null}
 
           <EstadoSync className="hidden lg:inline-flex" />
 
@@ -458,90 +520,111 @@ export function PantallaPos() {
           </div>
         </header>
 
-        {/* La tira de arriba: lo que se cobra sin buscar.
-        
-            Antes eran solo las teclas rápidas, que alguien configura una vez y
-            después nadie vuelve a tocar. Ahora convive con lo que MÁS SE VENDE
-            —calculado de las ventas de verdad, no de una lista a mano— y con
-            las ofertas vigentes, para que el que cobra sepa que ese producto
-            está promocionado antes de que se lo diga el cliente.
-            
-            Las solapas se dibujan solo si hay más de una con contenido: un
-            kiosco recién instalado no tiene ventas ni ofertas todavía. */}
-        {destacados.length > 0 && consulta === "" ? (
-          <div className="border-b border-border px-3 pb-3 pt-3">
-            <div className="mb-2.5 flex items-center gap-1 overflow-x-auto sin-scrollbar">
-              {destacados.map(({ clave, texto, icono: Icono, tinte }) => (
-                <button
-                  key={clave}
-                  type="button"
-                  onClick={() => setSolapa(clave)}
-                  aria-pressed={solapaViva === clave}
-                  className={cn(
-                    "presion flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-bold uppercase tracking-wide",
-                    solapaViva === clave
-                      ? "bg-surface-alt text-text"
-                      : "text-text-sutil hover:text-text-muted",
-                  )}
-                >
-                  <Icono size={12} className={tinte} aria-hidden />
-                  {texto}
-                </button>
-              ))}
-              {solapaViva === "teclas" ? (
-                <span className="ml-auto hidden shrink-0 pl-2 text-xs text-text-sutil sm:inline">
-                  F1 a F12
-                </span>
-              ) : null}
-            </div>
+        {/* Celular: el mismo rail, pero como tira horizontal pegada abajo del
+            buscador, que es donde se lo busca con el pulgar. */}
+        <nav
+          aria-label="Categorías"
+          className="flex shrink-0 gap-1 overflow-x-auto border-b border-border bg-surface px-2 py-1.5 sin-scrollbar lg:hidden"
+        >
+          <BotonesCategoria
+            categorias={categorias ?? []}
+            categoriaId={categoriaId}
+            onElegir={setCategoriaId}
+          />
+        </nav>
 
-            <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(6rem,1fr))] sm:gap-2.5 sm:[grid-template-columns:repeat(auto-fill,minmax(7.25rem,1fr))]">
-              {(destacados.find((d) => d.clave === solapaViva)?.items ?? [])
-                .slice(0, 12)
-                .map((p) => (
+        {/* Todo lo que sigue vive DENTRO del mismo contenedor con scroll.
+            Antes la tira de destacados era una sección fija entre el buscador
+            y la grilla: en un celular se comía media pantalla, no se podía
+            correr, y la grilla quedaba con dos filas útiles. Ahora scrollea
+            junto con los productos y lo único fijo es el buscador. */}
+        <div className="min-h-0 flex-1 overflow-y-auto pb-28 lg:pb-0">
+
+          {/* La tira de arriba: lo que se cobra sin buscar.
+        
+              Antes eran solo las teclas rápidas, que alguien configura una vez y
+              después nadie vuelve a tocar. Ahora convive con lo que MÁS SE VENDE
+              —calculado de las ventas de verdad, no de una lista a mano— y con
+              las ofertas vigentes, para que el que cobra sepa que ese producto
+              está promocionado antes de que se lo diga el cliente.
+            
+              Las solapas se dibujan solo si hay más de una con contenido: un
+              kiosco recién instalado no tiene ventas ni ofertas todavía. */}
+          {destacados.length > 0 && consulta === "" ? (
+            <div className="border-b border-border px-3 pb-3 pt-3">
+              <div className="mb-2.5 flex items-center gap-1 overflow-x-auto sin-scrollbar">
+                {destacados.map(({ clave, texto, icono: Icono, tinte }) => (
+                  <button
+                    key={clave}
+                    type="button"
+                    onClick={() => setSolapa(clave)}
+                    aria-pressed={solapaViva === clave}
+                    className={cn(
+                      "presion flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-bold uppercase tracking-wide",
+                      solapaViva === clave
+                        ? "bg-surface-alt text-text"
+                        : "text-text-sutil hover:text-text-muted",
+                    )}
+                  >
+                    <Icono size={12} className={tinte} aria-hidden />
+                    {texto}
+                  </button>
+                ))}
+                {solapaViva === "teclas" ? (
+                  <span className="ml-auto hidden shrink-0 pl-2 text-xs text-text-sutil sm:inline">
+                    F1 a F12
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(6rem,1fr))] sm:gap-2.5 sm:[grid-template-columns:repeat(auto-fill,minmax(7.25rem,1fr))]">
+                {(destacados.find((d) => d.clave === solapaViva)?.items ?? [])
+                  .slice(0, 12)
+                  .map((p) => (
+                    <ProductoCard
+                      key={p.id}
+                      producto={p}
+                      color={p.categoria_id ? porCategoria.get(p.categoria_id)?.color : null}
+                      categoriaNombre={
+                        p.categoria_id ? porCategoria.get(p.categoria_id)?.nombre : null
+                      }
+                      onElegir={agregarProducto}
+                    />
+                  ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="p-3">
+            {sinResultados ? (
+              <EstadoVacio
+                titulo={`No hay ningún "${consulta}"`}
+                detalle="Podés crearlo ahora con nombre y precio, y seguir cobrando."
+                accion={
+                  <Boton variante="primario" tamano="grande" onClick={() => setAltaAbierta(true)}>
+                    Crear «{consulta}» y agregar
+                  </Boton>
+                }
+              />
+            ) : resultados.length === 0 ? (
+              <EstadoVacio
+                titulo="Todavía no cargaste productos"
+                detalle="Empezá por el catálogo semilla: tildás lo que vendés y le ponés precio. No hace falta cargar nada a mano."
+              />
+            ) : (
+              <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(6.25rem,1fr))] sm:gap-2.5 sm:[grid-template-columns:repeat(auto-fill,minmax(7.75rem,1fr))]">
+                {resultados.map((p) => (
                   <ProductoCard
                     key={p.id}
                     producto={p}
                     color={p.categoria_id ? porCategoria.get(p.categoria_id)?.color : null}
-                    categoriaNombre={
-                      p.categoria_id ? porCategoria.get(p.categoria_id)?.nombre : null
-                    }
+                    categoriaNombre={p.categoria_id ? porCategoria.get(p.categoria_id)?.nombre : null}
                     onElegir={agregarProducto}
                   />
                 ))}
-            </div>
+              </div>
+            )}
           </div>
-        ) : null}
-
-        <div className="min-h-0 flex-1 overflow-y-auto p-3 pb-24 lg:pb-3">
-          {sinResultados ? (
-            <EstadoVacio
-              titulo={`No hay ningún "${consulta}"`}
-              detalle="Podés crearlo ahora con nombre y precio, y seguir cobrando."
-              accion={
-                <Boton variante="primario" tamano="grande" onClick={() => setAltaAbierta(true)}>
-                  Crear «{consulta}» y agregar
-                </Boton>
-              }
-            />
-          ) : resultados.length === 0 ? (
-            <EstadoVacio
-              titulo="Todavía no cargaste productos"
-              detalle="Empezá por el catálogo semilla: tildás lo que vendés y le ponés precio. No hace falta cargar nada a mano."
-            />
-          ) : (
-            <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(6.25rem,1fr))] sm:gap-2.5 sm:[grid-template-columns:repeat(auto-fill,minmax(7.75rem,1fr))]">
-              {resultados.map((p) => (
-                <ProductoCard
-                  key={p.id}
-                  producto={p}
-                  color={p.categoria_id ? porCategoria.get(p.categoria_id)?.color : null}
-                  categoriaNombre={p.categoria_id ? porCategoria.get(p.categoria_id)?.nombre : null}
-                  onElegir={agregarProducto}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </section>
 
@@ -576,6 +659,15 @@ export function PantallaPos() {
           />
         </div>
       )}
+
+      <EscanerCodigo
+        abierto={escaneando}
+        onCerrar={() => setEscaneando(false)}
+        onLeido={(codigo) => {
+          setEscaneando(false);
+          void agregarPorCodigo(codigo);
+        }}
+      />
 
       <Hoja abierta={altaAbierta} onCerrar={() => setAltaAbierta(false)} titulo="Producto nuevo">
         {sesion.comercioId ? (
@@ -716,6 +808,39 @@ export function PantallaPos() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Los botones del rail, en un solo lugar.
+ *
+ * Se pintan dos veces —tira horizontal en celular, rail vertical en escritorio—
+ * porque CSS no puede mover un nodo de una columna a otra, y el rail tiene que
+ * estar arriba en el celular (abajo lo tapa la barra del ticket) y al costado
+ * en la tablet. Duplicar el markup y no la lógica.
+ */
+function BotonesCategoria({
+  categorias,
+  categoriaId,
+  onElegir,
+}: {
+  categorias: Categoria[];
+  categoriaId: string | null;
+  onElegir: (id: string | null) => void;
+}) {
+  return (
+    <>
+      <BotonCategoria activa={categoriaId === null} nombre="Todo" onClick={() => onElegir(null)} />
+      {categorias.map((c) => (
+        <BotonCategoria
+          key={c.id}
+          activa={categoriaId === c.id}
+          nombre={c.nombre}
+          color={c.color}
+          onClick={() => onElegir(categoriaId === c.id ? null : c.id)}
+        />
+      ))}
+    </>
   );
 }
 

@@ -5,10 +5,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Vibración corta. En el mostrador lo visual solo no alcanza. */
+/**
+ * Vibración corta. En el mostrador lo visual solo no alcanza.
+ *
+ * Va envuelta en try/catch porque esto se llama ANTES del `onClick` real en
+ * los botones y en las teclas del numpad: si `vibrate` llegara a tirar —hay
+ * navegadores que lo hacen cuando la política de permisos lo bloquea— se
+ * llevaría puesta la acción del botón, y desde el mostrador eso se ve como un
+ * teclado que no responde.
+ */
 export function haptico(patron: number | number[] = 10): void {
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    navigator.vibrate(patron);
+  try {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(patron);
+    }
+  } catch {
+    // Un lujo, no un requisito.
   }
 }
 

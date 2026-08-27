@@ -9,6 +9,7 @@ import {
   Settings,
   Store,
   Tags,
+  Truck,
   Users,
   Wallet,
   Zap,
@@ -36,6 +37,7 @@ const GRUPOS = [
     items: [
       { href: "/productos", icono: ScanBarcode, texto: "Productos" },
       { href: "/stock", icono: Boxes, texto: "Stock" },
+      { href: "/proveedores", icono: Truck, texto: "Proveedores" },
       { href: "/precios", icono: Tags, texto: "Precios" },
     ],
   },

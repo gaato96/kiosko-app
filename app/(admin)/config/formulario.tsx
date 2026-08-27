@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { Boton } from "@/components/ui/boton";
 import { Campo, Input, Select } from "@/components/ui/campo";
+import { SubirImagen } from "@/components/ui/subir-imagen";
 import { ETIQUETAS_REDONDEO, UNIDADES_REDONDEO, formatearPesos, redondear } from "@/lib/money";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import type { Comercio, ConfigComercio, ZonaEnvio } from "@/lib/tipos";
@@ -21,6 +22,7 @@ export function FormularioConfig({
   const router = useRouter();
 
   const [nombre, setNombre] = useState(comercio.nombre);
+  const [logoUrl, setLogoUrl] = useState<string | null>(comercio.logo_url);
   const [telefono, setTelefono] = useState(comercio.telefono_whatsapp ?? "");
   const [direccion, setDireccion] = useState(comercio.direccion ?? "");
   const [vidrieraActiva, setVidrieraActiva] = useState(comercio.vidriera_activa);
@@ -48,6 +50,7 @@ export function FormularioConfig({
           nombre: nombre.trim(),
           telefono_whatsapp: telefono.replace(/\D/g, "") || null,
           direccion: direccion.trim() || null,
+          logo_url: logoUrl,
           vidriera_activa: vidrieraActiva,
         })
         .eq("id", comercio.id),
@@ -72,6 +75,19 @@ export function FormularioConfig({
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 tarjeta p-5">
         <h2 className="font-semibold">El kiosco</h2>
+
+        {/* El logo reemplaza la inicial genérica en la Vidriera, en el menú del
+            panel y en el mostrador. Es lo primero que ve el cliente cuando le
+            llega el link, así que vale la pena que sea el del kiosco y no un
+            cuadradito con una letra. */}
+        <SubirImagen
+          valor={logoUrl}
+          onCambio={setLogoUrl}
+          comercioId={comercio.id}
+          carpeta="logo"
+          etiqueta="Logo del kiosco"
+          ayuda="Se ve en la Vidriera, en el panel y en el mostrador. Cuadrado queda mejor."
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Campo etiqueta="Nombre">

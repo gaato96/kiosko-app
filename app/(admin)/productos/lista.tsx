@@ -18,7 +18,7 @@ import { Input, Select } from "@/components/ui/campo";
 import { formatearPesos, margenPct } from "@/lib/money";
 import { formatearPeso } from "@/lib/peso";
 import { normalizar } from "@/lib/db/schema";
-import type { Categoria, Producto } from "@/lib/tipos";
+import type { Categoria, Producto, Proveedor } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 import { AdminCategorias } from "./categorias";
 import { EditorProducto } from "./editor";
@@ -26,11 +26,15 @@ import { EditorProducto } from "./editor";
 export function ListaProductos({
   productos,
   categorias,
+  proveedores,
   costos,
+  comercioId,
 }: {
   productos: Producto[];
   categorias: Categoria[];
+  proveedores: Proveedor[];
   costos: Record<string, number>;
+  comercioId: string;
 }) {
   const [consulta, setConsulta] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
@@ -207,6 +211,8 @@ export function ListaProductos({
         producto={editando}
         costo={editando ? (costos[editando.id] ?? 0) : 0}
         categorias={categorias}
+        proveedores={proveedores}
+        comercioId={comercioId}
         onCerrar={() => setEditorAbierto(false)}
       />
 

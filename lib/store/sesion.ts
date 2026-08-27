@@ -18,6 +18,8 @@ export type Operador = { id: string; nombre: string; rol: Rol };
 type EstadoSesion = {
   comercioId: string | null;
   comercioNombre: string | null;
+  /** Logo del kiosco, para que el mostrador no muestre un icono genérico. */
+  comercioLogo: string | null;
   rolCuenta: Rol | "anon";
   usuarioId: string | null;
 
@@ -30,6 +32,7 @@ type EstadoSesion = {
   definirCuenta: (d: {
     comercioId: string | null;
     comercioNombre?: string | null;
+    comercioLogo?: string | null;
     rolCuenta: Rol | "anon";
     usuarioId: string | null;
   }) => void;
@@ -49,6 +52,7 @@ export const usarSesion = create<EstadoSesion>()(
     (set) => ({
       comercioId: null,
       comercioNombre: null,
+      comercioLogo: null,
       rolCuenta: "anon",
       usuarioId: null,
       operador: null,
@@ -60,6 +64,7 @@ export const usarSesion = create<EstadoSesion>()(
         set({
           comercioId: d.comercioId,
           comercioNombre: d.comercioNombre ?? null,
+          comercioLogo: d.comercioLogo ?? null,
           rolCuenta: d.rolCuenta,
           usuarioId: d.usuarioId,
         }),
@@ -71,6 +76,7 @@ export const usarSesion = create<EstadoSesion>()(
         set({
           comercioId: null,
           comercioNombre: null,
+          comercioLogo: null,
           rolCuenta: "anon",
           usuarioId: null,
           operador: null,

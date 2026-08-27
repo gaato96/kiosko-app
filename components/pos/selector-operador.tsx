@@ -118,9 +118,21 @@ export function SelectorOperador({
               "border border-border bg-surface p-3 hover:bg-surface-alt",
             )}
           >
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-fg">
-              {u.nombre.charAt(0).toUpperCase()}
-            </span>
+            {/* La foto, si la cargaron desde Configuración. En un turno con
+                cuatro personas, reconocerse por la cara es más rápido que
+                leer cuatro nombres que empiezan con la misma letra. */}
+            {u.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={u.avatar_url}
+                alt=""
+                className="h-14 w-14 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-fg">
+                {u.nombre.charAt(0).toUpperCase()}
+              </span>
+            )}
             <span className="text-center text-sm font-medium leading-tight">{u.nombre}</span>
             {u.rol === "dueno" ? <span className="text-xs text-text-muted">Dueño</span> : null}
           </button>

@@ -20,14 +20,19 @@ async function cliente() {
 import type { Rol } from "@/lib/tipos";
 import { escribirMeta, leerMeta } from "./schema";
 
-export type OperadorCacheado = { id: string; nombre: string; rol: Rol };
+export type OperadorCacheado = {
+  id: string;
+  nombre: string;
+  rol: Rol;
+  avatar_url?: string | null;
+};
 
 const CLAVE = "operadores";
 
 export async function refrescarOperadores(comercioId: string): Promise<OperadorCacheado[]> {
   const { data, error } = await (await cliente())
     .from("usuarios_comercio")
-    .select("id, nombre, rol")
+    .select("id, nombre, rol, avatar_url")
     .eq("comercio_id", comercioId)
     .eq("activo", true)
     .order("nombre");

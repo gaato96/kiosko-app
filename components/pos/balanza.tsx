@@ -52,7 +52,7 @@ export function ModoBalanza({
 
   if (precioKg <= 0) {
     return (
-      <div className="flex h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
         <Scale size={36} className="text-warning" />
         <p className="text-lg font-semibold">Falta cargar el precio por kilo</p>
         <p className="max-w-sm text-text-muted">
@@ -85,7 +85,7 @@ export function ModoBalanza({
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-bg">
+    <div className="flex h-full min-h-0 flex-col bg-bg">
       <header className="flex items-center gap-3 border-b border-border p-3">
         <Boton variante="fantasma" onClick={onVolver} aria-label="Volver">
           <ArrowLeft size={22} />

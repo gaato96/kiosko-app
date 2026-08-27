@@ -21,9 +21,15 @@ desde el SQL Editor:
 
 ```
 supabase/schema.sql         esquema + RLS + triggers + vistas + RPC
+supabase/migraciones/*.sql  en orden numérico (001, 002, 003, 004…)
 supabase/catalogo-base.sql  catálogo semilla argentino (266 productos)
 supabase/seed.sql           datos de demo — SOLO en desarrollo
 ```
+
+Las migraciones NO son opcionales sobre una base ya creada: cada una tapa
+agujeros del esquema anterior. La `004` en particular crea el bucket de
+Storage `imagenes` —sin él no se pueden subir el logo, las fotos de producto
+ni los avatares— y agrega los RPC de proveedores.
 
 Después, en el dashboard:
 

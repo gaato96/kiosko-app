@@ -281,6 +281,18 @@ export type Database = {
         Args: { p_id: string };
         Returns: { id: string; productos_sueltos: number };
       };
+      guardar_proveedor: {
+        Args: { payload: Record<string, unknown> };
+        Returns: { id: string; alta: boolean };
+      };
+      archivar_proveedor: {
+        Args: { p_id: string };
+        Returns: { id: string; productos_sueltos: number };
+      };
+      asignar_proveedor: {
+        Args: { p_proveedor_id: string | null; p_productos: string[] };
+        Returns: { actualizados: number };
+      };
     };
     Enums: {
       rol_usuario: "dueno" | "empleado";

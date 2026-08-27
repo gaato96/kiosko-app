@@ -112,7 +112,7 @@ export function PantallaCobro({
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-bg">
+    <div className="flex h-full min-h-0 flex-col bg-bg">
       <header className="flex shrink-0 items-center gap-3 border-b border-border bg-surface px-3 py-3.5 shadow-[var(--sombra-1)]">
         <Boton
           variante="secundario"
@@ -284,7 +284,7 @@ export function PantallaCobro({
         </div>
       )}
 
-      <footer className="flex shrink-0 gap-2 border-t border-border bg-surface p-3">
+      <footer className="borde-seguro flex shrink-0 gap-2 border-t border-border bg-surface px-3 pt-3">
         {medio ? (
           <Boton
             variante="plata"

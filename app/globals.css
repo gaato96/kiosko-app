@@ -246,12 +246,28 @@
 
   /* En el POS no se selecciona texto por accidente al tocar rápido. */
   .tema-pos {
+    -webkit-user-select: none;
     user-select: none;
     touch-action: manipulation;
   }
+
+  /**
+   * OJO: el prefijo -webkit- no es decoración vieja.
+   *
+   * En iOS, un ancestro con `-webkit-user-select: none` deja los <input> de
+   * adentro SIN PODER ESCRIBIR: se los puede tocar, no aparece el teclado y no
+   * entra ningún carácter. Todo el POS es descendiente de `.tema-pos`, así que
+   * eso se comía el buscador de productos, el de clientes al fiar y el alta
+   * express. Devolver el `user-select` sin prefijo no alcanza en iOS: hay que
+   * devolver los dos.
+   */
   .tema-pos input,
-  .tema-pos textarea {
+  .tema-pos textarea,
+  .tema-pos select,
+  .tema-pos [contenteditable] {
+    -webkit-user-select: text;
     user-select: text;
+    -webkit-touch-callout: default;
   }
 }
 
@@ -291,6 +307,18 @@
    */
   .borde-seguro {
     padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+  }
+
+  /**
+   * El otro borde: el de arriba.
+   *
+   * Con `viewportFit: cover`, en un celular con muesca —y en la PWA instalada,
+   * que dibuja abajo de la barra de estado— el primer elemento de la pantalla
+   * queda tapado por la hora y la señal. En el POS eso era justo el buscador.
+   * `env()` da 0 donde no hay muesca, así que en escritorio no cambia nada.
+   */
+  .borde-seguro-arriba {
+    padding-top: env(safe-area-inset-top);
   }
 
   .sin-scrollbar::-webkit-scrollbar {

@@ -102,6 +102,38 @@ export async function buscarClientes(consulta: string, limite = 30): Promise<Cli
 }
 
 /**
+ * Trae los clientes del servidor a la base local.
+ *
+ * Lo normal es que ya estén: el sincronizador los baja cada 30 segundos. Pero
+ * un dispositivo recién vinculado —o uno donde el primer pull se cortó— abría
+ * "Fiar a" con la lista VACÍA y sin ninguna explicación, y desde el mostrador
+ * eso se ve exactamente igual que un sistema roto. Esto es la red de
+ * contención: si localmente no hay nadie, se pregunta una vez.
+ *
+ * Devuelve cuántos quedaron guardados. Si no hay red, devuelve null: no es un
+ * error, es un kiosco sin internet, que es el caso para el que está hecho todo
+ * lo demás.
+ */
+export async function refrescarClientes(comercioId: string): Promise<number | null> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return null;
+
+  const { supabaseBrowser } = await import("@/lib/supabase/browser");
+  const { data, error } = await supabaseBrowser()
+    .from("clientes")
+    .select("*")
+    .eq("comercio_id", comercioId)
+    .eq("activo", true)
+    .order("nombre")
+    .limit(2000);
+
+  if (error) throw error;
+
+  const filas = (data ?? []) as Cliente[];
+  if (filas.length > 0) await db().clientes.bulkPut(filas);
+  return filas.length;
+}
+
+/**
  * Registrar un cobro.
  *
  * Si es en efectivo y hay caja abierta, el servidor inserta también un INGRESO

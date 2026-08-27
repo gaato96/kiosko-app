@@ -21,15 +21,19 @@ export default async function LayoutPos({ children }: { children: React.ReactNod
 
   const { data: comercio } = await supabase
     .from("comercios")
-    .select("id, nombre")
+    .select("id, nombre, logo_url")
     .eq("id", tenant.comercioId)
     .maybeSingle();
 
   return (
-    <div className="tema-pos flex h-dvh flex-col overflow-hidden bg-bg text-text">
+    // `overscroll-none` corta el rebote de iOS: sin eso, arrastrar la grilla
+    // hasta el final tironeaba la página entera y el buscador se iba de
+    // pantalla, que es lo que hacía sentir que el scroll del POS estaba roto.
+    <div className="tema-pos borde-seguro-arriba flex h-dvh flex-col overflow-hidden overscroll-none bg-bg text-text">
       <ArranquePos
         comercioId={tenant.comercioId}
         comercioNombre={comercio?.nombre ?? null}
+        comercioLogo={comercio?.logo_url ?? null}
         rol={tenant.rol === "anon" ? "empleado" : tenant.rol}
         usuarioId={data.claims.sub}
       />

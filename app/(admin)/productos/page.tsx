@@ -3,21 +3,23 @@ import { Sparkles, Tags } from "lucide-react";
 import { EncabezadoPagina } from "@/components/ui/tarjeta";
 import { COLUMNAS_PRODUCTO, contextoAdmin } from "@/lib/admin";
 import { ListaProductos } from "./lista";
-import type { Producto } from "@/lib/tipos";
+import type { Producto, Proveedor } from "@/lib/tipos";
 
 export const metadata = { title: "Productos" };
 export const dynamic = "force-dynamic";
 
 export default async function Productos() {
-  const { supabase } = await contextoAdmin();
+  const { supabase, comercioId } = await contextoAdmin();
 
-  const [{ data: productos }, { data: categorias }, { data: costos }] = await Promise.all([
-    supabase.from("productos").select(COLUMNAS_PRODUCTO).eq("activo", true).order("nombre").limit(2000),
-    supabase.from("categorias").select("*").eq("activo", true).order("orden"),
-    // Los costos vienen por una vista aparte porque el privilegio de columna
-    // sobre `productos` se lo revoca a todo `authenticated`.
-    supabase.from("productos_costos").select("id, precio_costo_centavos"),
-  ]);
+  const [{ data: productos }, { data: categorias }, { data: proveedores }, { data: costos }] =
+    await Promise.all([
+      supabase.from("productos").select(COLUMNAS_PRODUCTO).eq("activo", true).order("nombre").limit(2000),
+      supabase.from("categorias").select("*").eq("activo", true).order("orden"),
+      supabase.from("proveedores").select("*").eq("activo", true).order("nombre"),
+      // Los costos vienen por una vista aparte porque el privilegio de columna
+      // sobre `productos` se lo revoca a todo `authenticated`.
+      supabase.from("productos_costos").select("id, precio_costo_centavos"),
+    ]);
 
   const lista = (productos ?? []) as Producto[];
   const costoPorId = Object.fromEntries(
@@ -62,7 +64,13 @@ export default async function Productos() {
         }
       />
 
-      <ListaProductos productos={lista} categorias={categorias ?? []} costos={costoPorId} />
+      <ListaProductos
+        productos={lista}
+        categorias={categorias ?? []}
+        proveedores={(proveedores ?? []) as Proveedor[]}
+        costos={costoPorId}
+        comercioId={comercioId}
+      />
     </div>
   );
 }

@@ -22,14 +22,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Barcode, Trash2 } from "lucide-react";
+import { AlertTriangle, Barcode, ScanBarcode, Trash2 } from "lucide-react";
 import { Boton } from "@/components/ui/boton";
 import { Campo, Input, Select, Textarea } from "@/components/ui/campo";
+import { EscanerCodigo, hayEscaner } from "@/components/ui/escaner-codigo";
 import { Hoja } from "@/components/ui/hoja";
+import { SubirImagen } from "@/components/ui/subir-imagen";
 import { formatearNumero, formatearPesos, margenPct, parsearPesos, precioPorMargen } from "@/lib/money";
 import { formatearPeso, parsearPeso } from "@/lib/peso";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import type { Categoria, Producto, TipoVenta } from "@/lib/tipos";
+import type { Categoria, Producto, Proveedor, TipoVenta } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
 /** Los márgenes con los que trabaja un kiosco. Un toque en vez de una cuenta. */
@@ -38,6 +40,7 @@ const MARGENES = [25, 30, 35, 40, 50];
 type Borrador = {
   nombre: string;
   categoriaId: string;
+  proveedorId: string;
   codigoBarras: string;
   tipoVenta: TipoVenta;
   precio: string;
@@ -47,8 +50,12 @@ type Borrador = {
   stockInicial: string;
   stockMinimo: string;
   controlaStock: boolean;
+  /** Cuántas unidades de VENTA trae una unidad de COMPRA. Una caja x24 son 24. */
+  factorCompra: string;
+  unidadCompra: string;
   visibleEnVidriera: boolean;
   descripcion: string;
+  imagenUrl: string | null;
 };
 
 function borradorDe(p: Producto | null, costo: number): Borrador {
@@ -56,6 +63,7 @@ function borradorDe(p: Producto | null, costo: number): Borrador {
     return {
       nombre: "",
       categoriaId: "",
+      proveedorId: "",
       codigoBarras: "",
       tipoVenta: "UNIDAD",
       precio: "",
@@ -65,14 +73,18 @@ function borradorDe(p: Producto | null, costo: number): Borrador {
       stockInicial: "",
       stockMinimo: "",
       controlaStock: true,
+      factorCompra: "1",
+      unidadCompra: "Unidad",
       visibleEnVidriera: true,
       descripcion: "",
+      imagenUrl: null,
     };
   }
   const esPeso = p.tipo_venta === "PESO";
   return {
     nombre: p.nombre,
     categoriaId: p.categoria_id ?? "",
+    proveedorId: p.proveedor_id ?? "",
     codigoBarras: p.codigo_barras ?? "",
     tipoVenta: p.tipo_venta,
     precio: formatearNumero((esPeso ? p.precio_por_kg_centavos : p.precio_venta_centavos) ?? 0),
@@ -83,8 +95,11 @@ function borradorDe(p: Producto | null, costo: number): Borrador {
     stockInicial: "",
     stockMinimo: esPeso ? formatearPeso(p.stock_minimo) : String(p.stock_minimo),
     controlaStock: p.controla_stock,
+    factorCompra: String(p.factor_compra ?? 1),
+    unidadCompra: p.unidad_compra ?? "Unidad",
     visibleEnVidriera: p.visible_en_vidriera,
     descripcion: p.descripcion ?? "",
+    imagenUrl: p.imagen_url ?? null,
   };
 }
 
@@ -93,6 +108,8 @@ export function EditorProducto({
   producto,
   costo,
   categorias,
+  proveedores,
+  comercioId,
   onCerrar,
 }: {
   abierto: boolean;
@@ -100,12 +117,19 @@ export function EditorProducto({
   producto: Producto | null;
   costo: number;
   categorias: Categoria[];
+  proveedores: Proveedor[];
+  comercioId: string;
   onCerrar: () => void;
 }) {
   const router = useRouter();
   const [b, setB] = useState<Borrador>(() => borradorDe(producto, costo));
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [escaneando, setEscaneando] = useState(false);
+  // `hayEscaner()` toca `window`: se resuelve después del montaje, o el render
+  // del servidor y el del cliente no coincidirían.
+  const [puedeEscanear, setPuedeEscanear] = useState(false);
+  useEffect(() => setPuedeEscanear(hayEscaner()), []);
 
   useEffect(() => {
     if (abierto) {
@@ -126,6 +150,9 @@ export function EditorProducto({
   const set = <K extends keyof Borrador>(k: K, v: Borrador[K]) =>
     setB((prev) => ({ ...prev, [k]: v }));
 
+  /** Nunca 0: dividir el faltante por 0 rompería la pantalla de reposición. */
+  const factorCompra = Math.max(1, Math.round(Number(b.factorCompra) || 1));
+
   function aplicarMargen(pct: number) {
     if (costoCentavos <= 0) return;
     set("precio", formatearNumero(precioPorMargen(costoCentavos, pct)));
@@ -141,6 +168,7 @@ export function EditorProducto({
     const payload: Record<string, unknown> = {
       nombre: b.nombre.trim(),
       categoria_id: b.categoriaId || null,
+      proveedor_id: b.proveedorId || null,
       codigo_barras: b.codigoBarras.trim() || null,
       descripcion: b.descripcion.trim() || null,
       tipo_venta: b.tipoVenta,
@@ -155,7 +183,11 @@ export function EditorProducto({
         : null,
       controla_stock: b.controlaStock,
       stock_minimo: b.controlaStock ? cantidad(b.stockMinimo) : 0,
+      // Lo que arma el pedido al proveedor: 3 cajas x24, no 72 latas.
+      factor_compra: factorCompra,
+      unidad_compra: b.unidadCompra.trim() || "Unidad",
       visible_en_vidriera: b.visibleEnVidriera,
+      imagen_url: b.imagenUrl,
     };
 
     if (producto) payload.id = producto.id;
@@ -222,7 +254,45 @@ export function EditorProducto({
               <option value="PESO">Por peso (balanza)</option>
             </Select>
           </Campo>
+
+          {/* El proveedor es lo que después agrupa "Para reponer" en pedidos de
+              WhatsApp separados. Sin esto cargado, esa pantalla junta la
+              distribuidora con la panadería en una sola lista inservible. */}
+          <Campo
+            etiqueta="Proveedor"
+            className="sm:col-span-2"
+            ayuda={
+              proveedores.length === 0
+                ? "Todavía no cargaste ninguno. Se cargan en Mercadería → Proveedores."
+                : "A quién se le pide cuando falta."
+            }
+          >
+            <Select
+              value={b.proveedorId}
+              onChange={(e) => set("proveedorId", e.target.value)}
+              disabled={proveedores.length === 0}
+            >
+              <option value="">Sin proveedor</option>
+              {proveedores.map((pr) => (
+                <option key={pr.id} value={pr.id}>
+                  {pr.nombre}
+                </option>
+              ))}
+            </Select>
+          </Campo>
         </div>
+
+        {/* La foto es opcional a propósito (docs/00-PRD): pedirla siempre mata
+            la carga del catálogo. Está acá arriba porque, cuando se carga
+            desde el celular parado frente a la góndola, sacarla es un toque. */}
+        <SubirImagen
+          valor={b.imagenUrl}
+          onCambio={(url) => set("imagenUrl", url)}
+          comercioId={comercioId}
+          carpeta="productos"
+          etiqueta="Foto del producto"
+          ayuda="Opcional. Se ve en la Vidriera y en la grilla del mostrador."
+        />
 
         {/* Precio y costo juntos: la decisión es una sola. */}
         <fieldset className="tarjeta-alt/50 flex flex-col gap-4 rounded-[var(--radio-lg)] p-4">
@@ -374,25 +444,93 @@ export function EditorProducto({
               </Campo>
             </div>
           ) : null}
+
+          {/* Cómo se COMPRA, que no es cómo se vende. Al proveedor se le piden
+              3 cajas, no 72 latas; y una compra de 3 cajas sube el stock 72.
+              Estas dos columnas existían en la base desde el principio y no
+              había ninguna pantalla para tocarlas: quedaban en 1 / "Unidad" y
+              el pedido de reposición salía siempre mal. */}
+          {b.controlaStock ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo
+                etiqueta="Se compra por"
+                ayuda="Cómo viene del proveedor: caja, plancha, bolsa."
+              >
+                <Input
+                  value={b.unidadCompra}
+                  onChange={(e) => set("unidadCompra", e.target.value)}
+                  placeholder="Caja x24"
+                  list="unidades-de-compra"
+                />
+                <datalist id="unidades-de-compra">
+                  <option value="Unidad" />
+                  <option value="Caja x6" />
+                  <option value="Caja x12" />
+                  <option value="Caja x24" />
+                  <option value="Plancha x30" />
+                  <option value="Bolsa" />
+                  <option value="Horma" />
+                </datalist>
+              </Campo>
+
+              <Campo
+                etiqueta={esPeso ? "Cuántos gramos trae" : "Cuántas unidades trae"}
+                ayuda={
+                  factorCompra > 1
+                    ? `1 ${b.unidadCompra.trim() || "unidad"} = ${
+                        esPeso ? formatearPeso(factorCompra) : `${factorCompra} u`
+                      }`
+                    : "Dejalo en 1 si se compra suelto."
+                }
+              >
+                <Input
+                  inputMode="numeric"
+                  value={b.factorCompra}
+                  onChange={(e) => set("factorCompra", e.target.value.replace(/\D/g, ""))}
+                  placeholder="1"
+                  className="num"
+                />
+              </Campo>
+            </div>
+          ) : null}
         </fieldset>
 
         <fieldset className="flex flex-col gap-4">
           <legend className="rotulo mb-2">Ficha</legend>
 
-          <Campo etiqueta="Código de barras" ayuda="Podés dispararlo con la pistola sobre el campo.">
-            <div className="relative">
-              <Barcode
-                size={18}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-sutil"
-                aria-hidden
-              />
-              <Input
-                value={b.codigoBarras}
-                onChange={(e) => set("codigoBarras", e.target.value)}
-                placeholder="7790895003035"
-                className="num pl-11"
-                inputMode="numeric"
-              />
+          <Campo
+            etiqueta="Código de barras"
+            ayuda="Disparalo con la pistola sobre el campo, o escaneálo con la cámara."
+          >
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Barcode
+                  size={18}
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-sutil"
+                  aria-hidden
+                />
+                <Input
+                  value={b.codigoBarras}
+                  onChange={(e) => set("codigoBarras", e.target.value)}
+                  placeholder="7790895003035"
+                  className="num pl-11"
+                  inputMode="numeric"
+                />
+              </div>
+
+              {/* Solo si el navegador puede: un botón que abre una cámara que
+                  no lee nada es peor que no tenerlo. */}
+              {puedeEscanear ? (
+                <Boton
+                  type="button"
+                  tamano="icono-pos"
+                  onClick={() => setEscaneando(true)}
+                  aria-label="Escanear el código con la cámara"
+                  title="Escanear con la cámara"
+                >
+                  <ScanBarcode size={22} />
+                </Boton>
+              ) : null}
             </div>
           </Campo>
 
@@ -446,6 +584,15 @@ export function EditorProducto({
           {producto ? "Guardar cambios" : "Crear producto"}
         </Boton>
       </footer>
+
+      <EscanerCodigo
+        abierto={escaneando}
+        onCerrar={() => setEscaneando(false)}
+        onLeido={(codigo) => {
+          set("codigoBarras", codigo);
+          setEscaneando(false);
+        }}
+      />
     </Hoja>
   );
 }

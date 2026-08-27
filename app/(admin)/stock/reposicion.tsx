@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { uuidv7 } from "uuidv7";
 import { Check, Copy, MessageCircle, Truck } from "lucide-react";
@@ -28,6 +29,9 @@ export type FilaReposicion = {
 
 type Seleccion = Record<string, number>; // producto_id -> cantidad en unidades de COMPRA
 
+/** Clave del grupo de los que todavía no tienen a quién pedirle. */
+const SIN_PROVEEDOR = "sin-proveedor";
+
 export function PanelReposicion({
   filas,
   nombreComercio,
@@ -44,7 +48,7 @@ export function PanelReposicion({
   const grupos = useMemo(() => {
     const mapa = new Map<string, { nombre: string; telefono: string | null; filas: FilaReposicion[] }>();
     for (const f of filas) {
-      const clave = f.proveedor_id ?? "sin-proveedor";
+      const clave = f.proveedor_id ?? SIN_PROVEEDOR;
       if (!mapa.has(clave)) {
         mapa.set(clave, {
           nombre: f.proveedor_nombre ?? "Sin proveedor",
@@ -54,15 +58,27 @@ export function PanelReposicion({
       }
       mapa.get(clave)!.filas.push(f);
     }
-    return Array.from(mapa.entries());
+    // "Sin proveedor" va último: es el cajón de lo que falta asignar, no un
+    // proveedor al que se le pueda mandar un pedido.
+    return Array.from(mapa.entries()).sort(([a], [b]) =>
+      a === SIN_PROVEEDOR ? 1 : b === SIN_PROVEEDOR ? -1 : 0,
+    );
   }, [filas]);
 
-  /** Sugerencia base: lo que falta para volver al mínimo, en unidades de COMPRA. */
+  /**
+   * Sugerencia base: lo que falta para volver al mínimo, en unidades de COMPRA.
+   *
+   * `faltante` puede ser 0 (el producto llegó JUSTO al mínimo) y el pedido
+   * igual tiene sentido: se pide al menos una unidad de compra. Con el factor
+   * cargado —una caja x24— pedir 30 unidades sueltas se convierte en 2 cajas,
+   * que es lo que el proveedor entiende.
+   */
   function sugerido(f: FilaReposicion): number {
-    return Math.max(1, unidadesCompraDesdeDelta(Math.max(1, f.faltante), f.factor_compra));
+    const factor = Math.max(1, f.factor_compra || 1);
+    return Math.max(1, unidadesCompraDesdeDelta(Math.max(1, f.faltante), factor));
   }
 
-  function enviarPorWhatsApp(clave: string, grupo: { nombre: string; telefono: string | null; filas: FilaReposicion[] }) {
+  function enviarPorWhatsApp(grupo: { nombre: string; telefono: string | null; filas: FilaReposicion[] }) {
     const lineas = grupo.filas
       .filter((f) => seleccion[f.id])
       .map((f) => ({
@@ -91,7 +107,7 @@ export function PanelReposicion({
 
     const url = enlaceWhatsApp(grupo.telefono, texto);
     if (url) window.open(url, "_blank", "noopener");
-    void clave;
+    setAviso(`Se abrió el chat con ${grupo.nombre} con el pedido escrito.`);
   }
 
   /**
@@ -109,8 +125,9 @@ export function PanelReposicion({
           producto_id: f.id,
           cantidad_compra: cantidadCompra,
           // Se convierte por factor_compra: una caja x24 sube 24, una horma de
-          // 4 kg sube 4000 gramos.
-          delta_stock: Math.round(cantidadCompra * f.factor_compra),
+          // 4 kg sube 4000 gramos. El factor nunca puede ser 0 o el ingreso
+          // quedaría en cero unidades sin avisar.
+          delta_stock: Math.round(cantidadCompra * Math.max(1, f.factor_compra || 1)),
           costo_unitario_centavos: costoUnitario,
         };
       });
@@ -143,7 +160,13 @@ export function PanelReposicion({
     }
 
     setAviso(`Ingresaron ${items.length} productos de ${grupo.nombre}.`);
-    setSeleccion({});
+    // Solo se destilda lo de ESTE proveedor: el pedido que se estaba armando
+    // para otro no tiene por qué perderse porque llegó el de golosinas.
+    setSeleccion((antes) => {
+      const copia = { ...antes };
+      for (const f of grupo.filas) delete copia[f.id];
+      return copia;
+    });
     router.refresh();
   }
 
@@ -175,7 +198,7 @@ export function PanelReposicion({
                 >
                   Tildar todo
                 </Boton>
-                <Boton tamano="chico" onClick={() => enviarPorWhatsApp(clave, grupo)}>
+                <Boton tamano="chico" onClick={() => enviarPorWhatsApp(grupo)}>
                   {grupo.telefono ? <MessageCircle size={16} /> : <Copy size={16} />}
                   {grupo.telefono ? "Enviar pedido" : "Copiar pedido"}
                 </Boton>
@@ -189,6 +212,17 @@ export function PanelReposicion({
                 </Boton>
               </div>
             </header>
+
+            {clave === SIN_PROVEEDOR ? (
+              <p className="border-b border-border bg-warning-tenue px-3 py-2.5 text-sm text-warning">
+                A estos no se les puede mandar el pedido: no tienen proveedor
+                asignado.{" "}
+                <Link href="/proveedores" className="font-semibold underline underline-offset-4">
+                  Asignales uno
+                </Link>{" "}
+                y el pedido se arma solo, agrupado por quién te lo trae.
+              </p>
+            ) : null}
 
             <ul className="divide-y divide-border">
               {grupo.filas.map((f) => {

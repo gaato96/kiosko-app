@@ -9,10 +9,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, UserPlus } from "lucide-react";
+import { Camera, KeyRound, UserPlus } from "lucide-react";
 import { Boton } from "@/components/ui/boton";
 import { Campo, Input, Select } from "@/components/ui/campo";
 import { Hoja } from "@/components/ui/hoja";
+import { SubirImagen } from "@/components/ui/subir-imagen";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import type { Rol, UsuarioComercio } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
@@ -20,14 +21,26 @@ import { cn } from "@/lib/utils";
 export function PanelUsuarios({
   usuarios,
   usuarioActual,
+  comercioId,
 }: {
   usuarios: UsuarioComercio[];
   usuarioActual: string;
+  comercioId: string;
 }) {
   const router = useRouter();
   const [pinPara, setPinPara] = useState<UsuarioComercio | null>(null);
+  const [fotoPara, setFotoPara] = useState<UsuarioComercio | null>(null);
   const [invitando, setInvitando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+
+  async function cambiarAvatar(u: UsuarioComercio, url: string | null) {
+    const { error } = await supabaseBrowser()
+      .from("usuarios_comercio")
+      .update({ avatar_url: url })
+      .eq("id", u.id);
+    if (error) return setAviso(error.message);
+    router.refresh();
+  }
 
   async function cambiarActivo(u: UsuarioComercio, activo: boolean) {
     const { error } = await supabaseBrowser()
@@ -67,9 +80,27 @@ export function PanelUsuarios({
               !u.activo && "opacity-60",
             )}
           >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-fg">
-              {u.nombre.charAt(0).toUpperCase()}
-            </span>
+            {/* La foto también se toca desde acá: es el dueño el que carga a
+                los empleados, y pedirle a cada uno que entre a poner su foto
+                es un paso que nadie da. */}
+            <button
+              type="button"
+              onClick={() => setFotoPara(u)}
+              aria-label={`Cambiar la foto de ${u.nombre}`}
+              className="presion group relative h-11 w-11 shrink-0 cursor-pointer overflow-hidden rounded-full"
+            >
+              {u.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={u.avatar_url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center bg-primary font-bold text-primary-fg">
+                  {u.nombre.charAt(0).toUpperCase()}
+                </span>
+              )}
+              <span className="absolute inset-0 flex items-center justify-center bg-[rgb(4_7_14/0.55)] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                <Camera size={16} aria-hidden />
+              </span>
+            </button>
 
             <span className="min-w-32 flex-1">
               <span className="block font-medium">{u.nombre}</span>
@@ -121,6 +152,32 @@ export function PanelUsuarios({
               setAviso(mensaje);
             }}
           />
+        ) : null}
+      </Hoja>
+
+      <Hoja
+        abierta={fotoPara !== null}
+        onCerrar={() => setFotoPara(null)}
+        titulo={fotoPara ? `Foto de ${fotoPara.nombre}` : ""}
+      >
+        {fotoPara ? (
+          <div className="flex flex-col gap-4 p-5">
+            <SubirImagen
+              valor={fotoPara.avatar_url}
+              onCambio={(url) => {
+                setFotoPara({ ...fotoPara, avatar_url: url });
+                void cambiarAvatar(fotoPara, url);
+              }}
+              comercioId={comercioId}
+              carpeta="usuarios"
+              forma="redonda"
+              etiqueta="Foto"
+              ayuda="Se ve en el mostrador cuando se cambia de operador. Opcional."
+            />
+            <Boton variante="primario" ancho="completo" onClick={() => setFotoPara(null)}>
+              Listo
+            </Boton>
+          </div>
         ) : null}
       </Hoja>
 

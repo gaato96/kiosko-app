@@ -32,7 +32,7 @@ export default async function LayoutAdmin({
 
   const { data: comercio } = await supabase
     .from("comercios")
-    .select("nombre")
+    .select("nombre, logo_url")
     .eq("id", tenant.comercioId)
     .maybeSingle();
 
@@ -47,9 +47,18 @@ export default async function LayoutAdmin({
           <aside className="vidrio sticky top-0 z-30 shrink-0 border-b border-border lg:h-dvh lg:w-60 lg:border-b-0 lg:border-r">
             <div className="flex h-full flex-col">
               <div className="hidden items-center gap-2.5 px-4 py-5 lg:flex">
-                <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radio-sm)] bg-tinta text-brand-fg shadow-[var(--sombra-1)]">
-                  <Store size={17} aria-hidden />
-                </span>
+                {comercio?.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- logo del propio comercio
+                  <img
+                    src={comercio.logo_url}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-[var(--radio-sm)] object-cover shadow-[var(--sombra-1)]"
+                  />
+                ) : (
+                  <span className="flex h-9 w-9 items-center justify-center rounded-[var(--radio-sm)] bg-tinta text-brand-fg shadow-[var(--sombra-1)]">
+                    <Store size={17} aria-hidden />
+                  </span>
+                )}
                 <span className="min-w-0">
                   <span className="block truncate font-display text-sm font-semibold leading-tight">
                     {comercio?.nombre ?? "Kiosko App"}

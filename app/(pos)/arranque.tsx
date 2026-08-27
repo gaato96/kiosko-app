@@ -23,11 +23,13 @@ import type { Rol } from "@/lib/tipos";
 export function ArranquePos({
   comercioId,
   comercioNombre,
+  comercioLogo,
   rol,
   usuarioId,
 }: {
   comercioId: string;
   comercioNombre: string | null;
+  comercioLogo: string | null;
   rol: Rol;
   usuarioId: string;
 }) {
@@ -42,8 +44,8 @@ export function ArranquePos({
   }, []);
 
   useEffect(() => {
-    definirCuenta({ comercioId, comercioNombre, rolCuenta: rol, usuarioId });
-  }, [comercioId, comercioNombre, rol, usuarioId, definirCuenta]);
+    definirCuenta({ comercioId, comercioNombre, comercioLogo, rolCuenta: rol, usuarioId });
+  }, [comercioId, comercioNombre, comercioLogo, rol, usuarioId, definirCuenta]);
 
   useEffect(() => {
     let cancelado = false;

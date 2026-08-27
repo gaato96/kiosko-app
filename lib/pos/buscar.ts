@@ -24,6 +24,37 @@ const LIMITE = 40;
 type Indice = { productos: Producto[]; alias: string[][]; en: number };
 let indice: Indice | null = null;
 
+/**
+ * Versión del índice y sus oyentes.
+ *
+ * Sin esto el buscador quedaba pegado hasta recargar la página: el índice se
+ * rearmaba después de cada sincronización, pero nadie le avisaba a la pantalla
+ * y el `useEffect` que hace la búsqueda no se volvía a disparar. El producto
+ * nuevo ya estaba en Dexie, ya estaba en el índice, y la grilla seguía
+ * mostrando el resultado viejo.
+ *
+ * Es la fuente para `useSyncExternalStore`: quien busca se suscribe y vuelve a
+ * consultar cuando el catálogo cambió de verdad.
+ */
+let version = 0;
+const oyentes = new Set<() => void>();
+
+export function versionIndice(): number {
+  return version;
+}
+
+export function suscribirIndice(alCambiar: () => void): () => void {
+  oyentes.add(alCambiar);
+  return () => {
+    oyentes.delete(alCambiar);
+  };
+}
+
+function avisar(): void {
+  version += 1;
+  for (const oyente of oyentes) oyente();
+}
+
 /** Rearma el índice en memoria. Se llama al abrir el POS y después de cada sync. */
 export async function refrescarIndice(): Promise<number> {
   const productos = (await db().productos.toArray()).filter((p) => p.activo);
@@ -32,6 +63,7 @@ export async function refrescarIndice(): Promise<number> {
     alias: productos.map((p) => (p.alias ?? []).map(normalizar)),
     en: Date.now(),
   };
+  avisar();
   return productos.length;
 }
 
@@ -42,6 +74,7 @@ async function asegurarIndice(): Promise<Indice> {
 
 export function invalidarIndice(): void {
   indice = null;
+  avisar();
 }
 
 /**

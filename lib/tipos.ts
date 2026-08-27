@@ -79,6 +79,8 @@ export type UsuarioComercio = {
   comercio_id: string;
   nombre: string;
   rol: Rol;
+  /** Foto del operador. La ve el mostrador al cambiar de turno. */
+  avatar_url: string | null;
   activo: boolean;
 }
 

@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   // `/vidriera` queda afuera a propósito: el pedido que entra lo atiende quien
   // esté en el mostrador. Si para confirmarlo hay que llamar al dueño, el
   // cliente que está esperando del otro lado ya se fue a pedir a otro lado.
-  const ADMIN = ["/productos", "/stock", "/clientes", "/reportes", "/config", "/precios", "/compras", "/usuarios"];
+  const ADMIN = ["/productos", "/stock", "/clientes", "/reportes", "/config", "/precios", "/compras", "/usuarios", "/proveedores"];
   if (ADMIN.some((r) => pathname.startsWith(r)) && tenant.rol !== "dueno") {
     const url = request.nextUrl.clone();
     url.pathname = "/sin-permiso";

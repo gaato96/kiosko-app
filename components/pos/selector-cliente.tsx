@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Search, ShieldAlert, TriangleAlert, UserPlus } from "lucide-react";
+import { Loader2, Search, ShieldAlert, TriangleAlert, UserPlus, WifiOff } from "lucide-react";
 import { Boton } from "@/components/ui/boton";
 import { Campo, Input } from "@/components/ui/campo";
 import { formatearPesos, parsearPesos } from "@/lib/money";
@@ -21,6 +21,7 @@ import {
   disponibleDe,
   estadoDeCuenta,
   evaluarFiado,
+  refrescarClientes,
   type Veredicto,
 } from "@/lib/pos/clientes";
 import type { Cliente } from "@/lib/tipos";
@@ -46,10 +47,55 @@ export function SelectorCliente({
   const [lista, setLista] = useState<Cliente[]>([]);
   const [bloqueado, setBloqueado] = useState<{ cliente: Cliente; veredicto: Veredicto } | null>(null);
   const [altaAbierta, setAltaAbierta] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [sinRed, setSinRed] = useState(false);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
-    void buscarClientes(consulta).then(setLista);
-  }, [consulta]);
+    let vigente = true;
+    setCargando(true);
+    void buscarClientes(consulta)
+      .then((r) => {
+        if (vigente) setLista(r);
+      })
+      .catch(() => {
+        if (vigente) setLista([]);
+      })
+      .finally(() => {
+        if (vigente) setCargando(false);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [consulta, version]);
+
+  /**
+   * Si en la base local no hay NINGÚN cliente, se pregunta una vez al servidor.
+   *
+   * Antes, un dispositivo que todavía no había sincronizado abría "Fiar a" con
+   * una lista vacía y sin una sola palabra: el que estaba cobrando veía la
+   * pantalla en blanco y no tenía forma de saber si el kiosco no tenía
+   * clientes cargados o si el sistema estaba roto.
+   */
+  useEffect(() => {
+    if (cargando || lista.length > 0 || consulta !== "") return;
+    let vigente = true;
+    void refrescarClientes(comercioId)
+      .then((cuantos) => {
+        if (!vigente) return;
+        if (cuantos === null) setSinRed(true);
+        else if (cuantos > 0) setVersion((v) => v + 1);
+      })
+      .catch(() => {
+        if (vigente) setSinRed(true);
+      });
+    return () => {
+      vigente = false;
+    };
+    // Corre una sola vez por apertura: si el kiosco no tiene clientes, no tiene
+    // sentido volver a preguntar en cada tecla.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comercioId]);
 
   if (altaAbierta) {
     return (
@@ -124,33 +170,61 @@ export function SelectorCliente({
           size={18}
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
         />
+        {/* Sin `autoFocus`: en celular abría el teclado antes de que se
+            pintara la lista, tapaba las tarjetas y dejaba la hoja a medio
+            dibujar. Con el dedo ya se toca el campo cuando hace falta. */}
         <Input
+          type="search"
+          enterKeyHint="search"
           value={consulta}
           onChange={(e) => setConsulta(e.target.value)}
           placeholder="Buscar cliente…"
           className="pl-10"
-          autoFocus
           aria-label="Buscar cliente"
         />
       </div>
 
-      <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
-        {lista.map((c) => (
-          <li key={c.id}>
-            <button
-              className="w-full text-left"
-              onClick={() => {
-                if (montoCentavos <= 0) return onElegir(c);
-                const veredicto = evaluarFiado(c, montoCentavos);
-                if (veredicto.resultado === "permite") return onElegir(c);
-                setBloqueado({ cliente: c, veredicto });
-              }}
-            >
-              <TarjetaCliente cliente={c} />
-            </button>
-          </li>
-        ))}
-      </ul>
+      {cargando && lista.length === 0 ? (
+        <p className="flex items-center justify-center gap-2 py-8 text-text-muted">
+          <Loader2 size={18} className="animate-spin" aria-hidden /> Buscando…
+        </p>
+      ) : lista.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 py-8 text-center">
+          {sinRed ? (
+            <WifiOff size={26} className="text-text-sutil" aria-hidden />
+          ) : null}
+          <p className="font-semibold">
+            {consulta.trim() !== ""
+              ? `No hay ningún cliente que se llame “${consulta.trim()}”`
+              : "Todavía no tenés clientes con cuenta"}
+          </p>
+          <p className="max-w-xs text-sm text-text-muted">
+            {consulta.trim() !== ""
+              ? "Crealo ahora con el nombre y el límite, y seguí cobrando."
+              : sinRed
+                ? "Este dispositivo todavía no bajó la lista y no hay internet. Podés crear el cliente igual: se sincroniza solo cuando vuelva."
+                : "El fiado arranca cuando cargás al primero. Nombre y límite, nada más."}
+          </p>
+        </div>
+      ) : (
+        <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
+          {lista.map((c) => (
+            <li key={c.id}>
+              <button
+                className="w-full text-left"
+                onClick={() => {
+                  if (montoCentavos <= 0) return onElegir(c);
+                  const veredicto = evaluarFiado(c, montoCentavos);
+                  if (veredicto.resultado === "permite") return onElegir(c);
+                  setBloqueado({ cliente: c, veredicto });
+                }}
+              >
+                <TarjetaCliente cliente={c} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <Boton variante="secundario" tamano="grande" ancho="completo" onClick={() => setAltaAbierta(true)}>
         <UserPlus size={20} /> Cliente nuevo

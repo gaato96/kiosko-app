@@ -7,13 +7,16 @@ export const metadata = { title: "Configuración" };
 export const dynamic = "force-dynamic";
 
 export default async function Config() {
-  const { supabase, usuarioId } = await contextoAdmin();
+  const { supabase, usuarioId, comercioId } = await contextoAdmin();
 
   const [{ data: comercio }, { data: config }, { data: usuarios }, { data: zonas }] =
     await Promise.all([
       supabase.from("comercios").select("*").maybeSingle(),
       supabase.from("config_comercio").select("*").maybeSingle(),
-      supabase.from("usuarios_comercio").select("id, comercio_id, nombre, rol, activo").order("nombre"),
+      supabase
+        .from("usuarios_comercio")
+        .select("id, comercio_id, nombre, rol, avatar_url, activo")
+        .order("nombre"),
       supabase.from("zonas_envio").select("*").order("costo_centavos"),
     ]);
 
@@ -28,7 +31,11 @@ export default async function Config() {
 
       <FormularioConfig comercio={comercio} config={config} zonas={zonas ?? []} />
 
-      <PanelUsuarios usuarios={(usuarios ?? []) as UsuarioComercio[]} usuarioActual={usuarioId} />
+      <PanelUsuarios
+        usuarios={(usuarios ?? []) as UsuarioComercio[]}
+        usuarioActual={usuarioId}
+        comercioId={comercioId}
+      />
     </div>
   );
 }

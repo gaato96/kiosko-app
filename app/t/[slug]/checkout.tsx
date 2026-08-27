@@ -8,9 +8,23 @@
  *
  * Se pregunta cómo va a pagar: sin eso, el del mostrador no sabe si tiene que
  * preparar el vuelto o si el pedido ya está cobrado.
+ *
+ * LOS DATOS PERSONALES VAN EN CAMPOS NO CONTROLADOS, a propósito.
+ *
+ * Con `value={estado}` React reescribe el valor del input en cada render, y
+ * cualquier render que llegue a destiempo —el autocompletado del celular, una
+ * rehidratación, un remontaje— pisa lo tipeado y se come un carácter. Eso es
+ * exactamente lo que pasaba acá: el visitante escribía el teléfono y le
+ * desaparecía un número, y el nombre igual. Con `defaultValue` + `ref` el que
+ * manda es el DOM: React no le vuelve a escribir nunca, así que no hay forma
+ * de que se pierda una tecla.
+ *
+ * Además quedan guardados en el navegador. Si el pedido se corta a la mitad
+ * —se cae la página, el visitante va a mirar otra cosa— no hay que volver a
+ * escribir el nombre, el teléfono y la dirección.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { formatearPesos } from "@/lib/money";
 import { formatearPeso } from "@/lib/peso";
@@ -19,6 +33,31 @@ import { enlaceWhatsApp, mensajePedidoVidriera } from "@/lib/wa";
 import type { ProductoVidriera } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 import type { Comercio, Zona } from "./tienda";
+
+const CLAVE_DATOS = "kiosko:vidriera:datos";
+
+type DatosCliente = { nombre: string; telefono: string; direccion: string };
+
+const DATOS_VACIOS: DatosCliente = { nombre: "", telefono: "", direccion: "" };
+
+function leerDatos(slug: string): DatosCliente {
+  if (typeof localStorage === "undefined") return DATOS_VACIOS;
+  try {
+    const crudo = localStorage.getItem(`${CLAVE_DATOS}:${slug}`);
+    if (!crudo) return DATOS_VACIOS;
+    return { ...DATOS_VACIOS, ...(JSON.parse(crudo) as Partial<DatosCliente>) };
+  } catch {
+    return DATOS_VACIOS;
+  }
+}
+
+function guardarDatos(slug: string, datos: DatosCliente): void {
+  try {
+    localStorage.setItem(`${CLAVE_DATOS}:${slug}`, JSON.stringify(datos));
+  } catch {
+    // Modo incógnito o storage lleno: que no se guarde no puede romper el pedido.
+  }
+}
 
 /** Lo que un kiosco cobra de verdad en un pedido a domicilio. */
 const MEDIOS = [
@@ -46,9 +85,27 @@ export function Checkout({
   onVolver: () => void;
   onListo: (numero: number | null) => void;
 }) {
-  const [nombre, setNombre] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [direccion, setDireccion] = useState("");
+  // El primer valor sale del navegador y se escribe UNA sola vez, con
+  // `defaultValue`. A partir de ahí el input es dueño de su contenido.
+  const [inicial] = useState(() => leerDatos(comercio.slug));
+  const [datos, setDatos] = useState<DatosCliente>(inicial);
+  const nombreRef = useRef<HTMLInputElement>(null);
+  const telefonoRef = useRef<HTMLInputElement>(null);
+  const direccionRef = useRef<HTMLInputElement>(null);
+
+  const nombre = datos.nombre;
+  const telefono = datos.telefono;
+  const direccion = datos.direccion;
+
+  const anotar = (campo: keyof DatosCliente) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valor = e.target.value;
+    setDatos((antes) => ({ ...antes, [campo]: valor }));
+  };
+
+  useEffect(() => {
+    guardarDatos(comercio.slug, datos);
+  }, [comercio.slug, datos]);
+
   const [esEnvio, setEsEnvio] = useState(zonas.length > 0);
   const [zonaId, setZonaId] = useState(zonas[0]?.id ?? "");
   const [medio, setMedio] = useState<string>("EFECTIVO");
@@ -68,13 +125,20 @@ export function Checkout({
     setEnviando(true);
     setError(null);
 
+    // Se leen del DOM y no del estado: si algún render se perdió un `change`
+    // —autocompletado, dictado por voz, pegar con el menú del sistema— lo que
+    // el visitante ve en pantalla es lo que se manda.
+    const nombreFinal = (nombreRef.current?.value ?? nombre).trim();
+    const telefonoFinal = (telefonoRef.current?.value ?? telefono).trim();
+    const direccionFinal = (direccionRef.current?.value ?? direccion).trim();
+
     // 1. El pedido se GUARDA primero. Esta es toda la diferencia con un wa.me suelto.
     const { data, error } = await supabaseBrowser().rpc("crear_pedido_vidriera", {
       payload: {
         slug: comercio.slug,
-        nombre_cliente: nombre.trim(),
-        telefono: telefono.trim(),
-        direccion: esEnvio ? direccion.trim() : null,
+        nombre_cliente: nombreFinal,
+        telefono: telefonoFinal,
+        direccion: esEnvio ? direccionFinal : null,
         tipo_entrega: esEnvio ? "ENVIO" : "RETIRO",
         zona_id: esEnvio ? zonaId || null : null,
         notas: notas.trim() || null,
@@ -105,9 +169,9 @@ export function Checkout({
     // 2. Recién ahora se abre WhatsApp.
     const texto = mensajePedidoVidriera({
       numero: resultado?.numero ?? null,
-      nombreCliente: nombre.trim(),
-      telefono: telefono.trim(),
-      direccion: esEnvio ? direccion.trim() : null,
+      nombreCliente: nombreFinal,
+      telefono: telefonoFinal,
+      direccion: esEnvio ? direccionFinal : null,
       esEnvio,
       lineas: lineas.map((l) => ({
         descripcion: l.producto.nombre,
@@ -157,9 +221,13 @@ export function Checkout({
         <Bloque titulo="Tus datos">
           <Campo etiqueta="Nombre y apellido">
             <input
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              ref={nombreRef}
+              name="nombre"
+              type="text"
+              defaultValue={inicial.nombre}
+              onChange={anotar("nombre")}
               autoComplete="name"
+              enterKeyHint="next"
               className={ENTRADA}
               required
             />
@@ -167,10 +235,14 @@ export function Checkout({
 
           <Campo etiqueta="Teléfono" ayuda="Para avisarte cuando esté listo">
             <input
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
+              ref={telefonoRef}
+              name="telefono"
+              type="tel"
+              defaultValue={inicial.telefono}
+              onChange={anotar("telefono")}
               inputMode="tel"
               autoComplete="tel"
+              enterKeyHint="next"
               placeholder="381 123 4567"
               className={ENTRADA}
               required
@@ -194,9 +266,13 @@ export function Checkout({
             <>
               <Campo etiqueta="Dirección">
                 <input
-                  value={direccion}
-                  onChange={(e) => setDireccion(e.target.value)}
+                  ref={direccionRef}
+                  name="direccion"
+                  type="text"
+                  defaultValue={inicial.direccion}
+                  onChange={anotar("direccion")}
                   autoComplete="street-address"
+                  enterKeyHint="done"
                   placeholder="Calle, número, piso"
                   className={ENTRADA}
                   required

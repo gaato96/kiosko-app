@@ -85,6 +85,9 @@ function Tecla({
         haptico(9);
         onClick();
       }}
+      // Sin esto, un toque rápido sobre la tecla puede quedar interpretado
+      // como un doble-tap de zoom en Android y no dispara nada.
+      style={{ touchAction: "manipulation" }}
       className={cn(
         "presion flex h-18 cursor-pointer select-none items-center justify-center",
         "rounded-[var(--radio)] font-display text-2xl font-semibold",
